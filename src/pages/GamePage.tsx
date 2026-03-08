@@ -330,8 +330,6 @@ const GamePage = () => {
         onTestComplete={handleClaimMissionReward}
         onStartTest={handleMonthlyTestStart}
       />
-
-    </div>
     </div>
   );
 };
