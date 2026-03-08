@@ -57,13 +57,15 @@ const StudentRegisterPage = () => {
     }, 400);
   }, []);
 
-  const loadSchools = async (district: string) => {
+  const loadSchools = async (defaultDistrict?: string) => {
     const { data } = await supabase
       .from("schools")
       .select("*")
-      .eq("district", district)
+      .order("district")
       .order("name");
     setSchools(data || []);
+    setAllSchoolsLoaded(true);
+    if (defaultDistrict) setSchoolDistrictFilter(defaultDistrict);
   };
 
   const checkEmailAuthorization = useCallback(async (email: string) => {
