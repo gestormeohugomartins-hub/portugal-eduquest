@@ -261,6 +261,7 @@ const ParentDashboard = () => {
   };
 
 
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center parchment-bg">
         <p className="font-display text-xl">A carregar...</p>
