@@ -13,6 +13,8 @@ import { BattleModal } from "@/components/game/BattleModal";
 import { RankingsPanel } from "@/components/game/RankingsPanel";
 import { MonthlyTestModal } from "@/components/game/MonthlyTestModal";
 import { PremiumModal } from "@/components/game/PremiumModal";
+import { AchievementsPanel } from "@/components/game/AchievementsPanel";
+import { useAchievements } from "@/hooks/useAchievements";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
@@ -33,7 +35,7 @@ const GamePage = () => {
   const [showMonthlyTest, setShowMonthlyTest] = useState(false);
   const [battleQuizCallback, setBattleQuizCallback] = useState<(() => Promise<boolean>) | null>(null);
   const [showPremium, setShowPremium] = useState(false);
-
+  const { achievements, unlocked, checkAchievements } = useAchievements(studentData?.id);
   useEffect(() => {
     if (!loading && !user) navigate("/login");
     if (!loading && user && !isStudent) navigate("/parent");
@@ -67,6 +69,11 @@ const GamePage = () => {
       .eq("id", studentData.id);
 
     refreshProfile();
+    // Check achievements after gaining rewards
+    if (studentData) {
+      const { count } = await supabase.from("quiz_history").select("*", { count: "exact", head: true }).eq("student_id", studentData.id).eq("answered_correctly", true);
+      checkAchievements({ correctQuizzes: count || 0 });
+    }
   };
 
   const handleBattleEnd = async (won: boolean, coins: number, diamonds: number, xp: number) => {
@@ -102,9 +109,18 @@ const GamePage = () => {
   }, []);
 
   const handleMonthlyTestStart = (testId: string, questionCount: number) => {
-    // For now, redirect to quiz with test mode
     toast.info(`Teste mensal iniciado! ${questionCount} perguntas.`);
     setShowQuiz(true);
+  };
+
+  const checkBuildingAchievements = async () => {
+    if (!studentData) return;
+    const { count } = await supabase.from("buildings").select("*", { count: "exact", head: true }).eq("student_id", studentData.id);
+    checkAchievements({
+      buildingCount: count || 0,
+      villageLevel: studentData.village_level,
+      isPremium: studentData.is_premium,
+    });
   };
 
   if (loading || !studentData) {
@@ -180,13 +196,16 @@ const GamePage = () => {
               district={studentData.district}
               schoolName={(studentData as any).school_name}
             />
+
+            {/* Achievements */}
+            <AchievementsPanel achievements={achievements} unlocked={unlocked} />
           </div>
         </SheetContent>
       </Sheet>
 
       {/* Main View */}
       <div className="pt-20 pb-20">
-        {view === "village" && <VillageView student={studentData} onQuiz={() => setShowQuiz(true)} onRefresh={refreshProfile} />}
+        {view === "village" && <VillageView student={studentData} onQuiz={() => setShowQuiz(true)} onRefresh={() => { refreshProfile(); checkBuildingAchievements(); }} onPremium={() => setShowPremium(true)} />}
         {view === "map" && <PortugalMap />}
         {view === "chat" && <ChatPanel studentId={studentData.id} />}
       </div>

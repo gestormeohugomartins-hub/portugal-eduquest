@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Crown, Heart, Building2 } from "lucide-react";
+import { Crown, Heart, Building2, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 interface PremiumModalProps {
@@ -25,16 +25,23 @@ export const PremiumModal = ({ open, onOpenChange, studentId, isPremium, associa
   const [code, setCode] = useState(associationCode || "");
   const [savingCode, setSavingCode] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoApplied, setPromoApplied] = useState<{ discount_percent: number; discount_amount: number } | null>(null);
+  const [validatingPromo, setValidatingPromo] = useState(false);
 
   const registrationDate = new Date(createdAt);
   const daysSinceRegistration = Math.floor((Date.now() - registrationDate.getTime()) / (1000 * 60 * 60 * 24));
   const canSetCode = daysSinceRegistration <= 30 && !associationCode;
 
+  const basePrice = 4.99;
+  const finalPrice = promoApplied
+    ? Math.max(0, basePrice - (promoApplied.discount_amount || 0) - basePrice * (promoApplied.discount_percent || 0) / 100)
+    : basePrice;
+
   const handleSaveCode = async () => {
     if (!code.trim()) return;
     setSavingCode(true);
 
-    // Verify code exists
     const { data: association } = await supabase
       .from("parent_associations")
       .select("id, name, status")
@@ -63,11 +70,35 @@ export const PremiumModal = ({ open, onOpenChange, studentId, isPremium, associa
     setSavingCode(false);
   };
 
+  const handleValidatePromo = async () => {
+    if (!promoCode.trim()) return;
+    setValidatingPromo(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("validate-promo-code", {
+        body: { code: promoCode.trim() },
+      });
+      if (error) throw error;
+      if (data?.valid) {
+        setPromoApplied({ discount_percent: data.discount_percent, discount_amount: data.discount_amount });
+        toast.success("Código promocional aplicado! 🎉");
+      } else {
+        toast.error(data?.error || "Código inválido.");
+      }
+    } catch (e: any) {
+      toast.error("Erro ao validar código: " + e.message);
+    }
+    setValidatingPromo(false);
+  };
+
   const handleCheckout = async () => {
     setCheckingOut(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { studentId, associationCode: code.trim().toUpperCase() || undefined },
+        body: {
+          studentId,
+          associationCode: code.trim().toUpperCase() || undefined,
+          promoCode: promoApplied ? promoCode.trim().toUpperCase() : undefined,
+        },
       });
 
       if (error) throw error;
@@ -121,7 +152,43 @@ export const PremiumModal = ({ open, onOpenChange, studentId, isPremium, associa
                 <li>✅ Progressão automática de ano</li>
                 <li>✅ Conteúdo exclusivo</li>
               </ul>
-              <p className="font-display font-bold text-xl text-center mt-4">€4,99 <span className="text-sm font-body font-normal text-muted-foreground">/ano escolar</span></p>
+              <p className="font-display font-bold text-xl text-center mt-4">
+                {promoApplied && finalPrice < basePrice ? (
+                  <>
+                    <span className="line-through text-muted-foreground text-base mr-2">€{basePrice.toFixed(2)}</span>
+                    €{finalPrice.toFixed(2)}
+                  </>
+                ) : (
+                  <>€{basePrice.toFixed(2)}</>
+                )}
+                <span className="text-sm font-body font-normal text-muted-foreground"> /ano escolar</span>
+              </p>
+            </div>
+
+            {/* Promo Code */}
+            <div className="border border-border rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Tag className="w-4 h-4 text-primary" />
+                <Label className="font-body font-semibold text-sm">Código Promocional</Label>
+              </div>
+              {promoApplied ? (
+                <p className="font-body text-sm text-green-600">
+                  ✅ Desconto aplicado: {promoApplied.discount_percent > 0 ? `${promoApplied.discount_percent}%` : `€${promoApplied.discount_amount}`}
+                </p>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    value={promoCode}
+                    onChange={e => setPromoCode(e.target.value.toUpperCase())}
+                    placeholder="PROMO-XXXX"
+                    className="flex-1"
+                    maxLength={20}
+                  />
+                  <Button size="sm" variant="outline" onClick={handleValidatePromo} disabled={validatingPromo}>
+                    {validatingPromo ? "..." : "Aplicar"}
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Association Code */}
@@ -162,7 +229,7 @@ export const PremiumModal = ({ open, onOpenChange, studentId, isPremium, associa
               onClick={handleCheckout}
               disabled={checkingOut}
             >
-              {checkingOut ? "A processar..." : "👑 Ativar Premium — €4,99/ano"}
+              {checkingOut ? "A processar..." : `👑 Ativar Premium — €${finalPrice.toFixed(2)}/ano`}
             </Button>
           </div>
         )}

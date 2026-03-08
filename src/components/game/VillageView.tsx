@@ -34,6 +34,7 @@ interface VillageViewProps {
   };
   onQuiz: () => void;
   onRefresh: () => void;
+  onPremium?: () => void;
 }
 
 // Production rates (coins per minute per level)
@@ -44,7 +45,7 @@ const PRODUCTION_RATES: Record<string, number> = {
 };
 const PRODUCTION_INTERVAL_MS = 60000;
 
-export const VillageView = ({ student, onQuiz, onRefresh }: VillageViewProps) => {
+export const VillageView = ({ student, onQuiz, onRefresh, onPremium }: VillageViewProps) => {
   const [buildings, setBuildings] = useState<PlacedBuilding[]>([]);
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
@@ -572,7 +573,7 @@ export const VillageView = ({ student, onQuiz, onRefresh }: VillageViewProps) =>
               <Button variant="outline" className="flex-1" onClick={() => setShowPremiumGate(false)}>
                 Mais tarde
               </Button>
-              <Button className="flex-1 bg-gold text-gold-foreground" onClick={() => setShowPremiumGate(false)}>
+              <Button className="flex-1 bg-gold text-gold-foreground" onClick={() => { setShowPremiumGate(false); onPremium?.(); }}>
                 <Crown className="w-4 h-4 mr-1" /> Fazer Upgrade
               </Button>
             </div>
