@@ -320,7 +320,7 @@ const StudentRegisterPage = () => {
           <Button 
             type="submit" 
             className="w-full bg-primary text-primary-foreground font-bold text-lg py-5" 
-            disabled={loading || emailStatus !== "authorized"}
+            disabled={loading || emailStatus !== "authorized" || nicknameStatus === "taken" || nicknameStatus === "checking"}
           >
             {loading ? "A registar..." : "⚔️ Registar"}
           </Button>
