@@ -17,6 +17,7 @@ import ParentDashboard from "./pages/ParentDashboard";
 import PlacementTestPage from "./pages/PlacementTestPage";
 import FAQPage from "./pages/FAQPage";
 import AssociationRegisterPage from "./pages/AssociationRegisterPage";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/placement-test" element={<PlacementTestPage />} />
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/register/association" element={<AssociationRegisterPage />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

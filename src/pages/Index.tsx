@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import villageHero from "@/assets/village-hero.png";
 import { Button } from "@/components/ui/button";
-import { Shield, BookOpen, Users, Map, Cookie, FileText, Mail, MessageSquare, X } from "lucide-react";
+import { Shield, BookOpen, Users, Map, Cookie, FileText, Mail, MessageSquare, X, Smartphone, Monitor } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -172,7 +172,7 @@ const Index = () => {
           <p className="font-body text-base md:text-lg text-muted-foreground text-center max-w-xl mb-6">
             O jogo educativo que transforma o estudo em aventura para o 1º ciclo do ensino básico.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 mb-8">
             <Button 
               size="lg" 
               className="bg-primary text-primary-foreground font-bold px-8 py-5"
@@ -188,6 +188,50 @@ const Index = () => {
             >
               ⚔️ Entrar
             </Button>
+          </div>
+
+          {/* Platform Download/Play Section */}
+          <div className="bg-card/80 backdrop-blur rounded-2xl border border-border p-6 max-w-lg w-full">
+            <p className="font-display text-sm font-bold text-center mb-4 text-muted-foreground">
+              Disponível em todas as plataformas
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <a
+                href="https://play.google.com/store/apps/details?id=app.lovable.381d72f5897a457e979e5888fd33045b"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-foreground text-background rounded-xl px-5 py-3 font-body font-bold text-sm hover:opacity-90 transition-opacity"
+              >
+                <Smartphone className="w-5 h-5" />
+                <div className="text-left">
+                  <span className="text-[10px] font-normal opacity-70 block leading-none">Disponível no</span>
+                  Google Play
+                </div>
+              </a>
+              <a
+                href="https://apps.apple.com/app/questeduca/id000000000"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-foreground text-background rounded-xl px-5 py-3 font-body font-bold text-sm hover:opacity-90 transition-opacity"
+              >
+                <Smartphone className="w-5 h-5" />
+                <div className="text-left">
+                  <span className="text-[10px] font-normal opacity-70 block leading-none">Disponível na</span>
+                  App Store
+                </div>
+              </a>
+              <Button
+                variant="outline"
+                className="border-2 border-primary/30 font-bold rounded-xl px-5 py-3 h-auto"
+                onClick={() => navigate("/login")}
+              >
+                <Monitor className="w-5 h-5 mr-2" />
+                <div className="text-left">
+                  <span className="text-[10px] font-normal opacity-70 block leading-none">Jogar no</span>
+                  PC / Browser
+                </div>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
