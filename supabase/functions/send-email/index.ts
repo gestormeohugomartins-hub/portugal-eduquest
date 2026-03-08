@@ -43,7 +43,7 @@ serve(async (req) => {
     // Create email content in MIME format
     const boundary = `----=_Part_${Date.now()}`;
     const emailContent = [
-      `From: Questeduca <${smtpUser}>`,
+      `From: Questeduca <noreply@questeduca.pt>`,
       `To: ${to}`,
       `Subject: ${subject}`,
       `MIME-Version: 1.0`,
