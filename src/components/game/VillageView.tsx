@@ -562,6 +562,7 @@ export const VillageView = ({ student, onQuiz, onRefresh, onPremium }: VillageVi
         coins={student.coins} diamonds={student.diamonds}
         villageLevel={student.village_level} isPremium={student.is_premium}
         district={student.district}
+        resources={resources}
       />
 
       <BuildingInfoModal
