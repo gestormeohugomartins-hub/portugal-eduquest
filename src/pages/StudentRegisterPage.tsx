@@ -34,6 +34,15 @@ const StudentRegisterPage = () => {
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "authorized" | "not_authorized">("idle");
   const [authorizedEmail, setAuthorizedEmail] = useState<any>(null);
 
+  const loadSchools = async (district: string) => {
+    const { data } = await supabase
+      .from("schools")
+      .select("*")
+      .eq("district", district)
+      .order("name");
+    setSchools(data || []);
+  };
+
   const checkEmailAuthorization = useCallback(async (email: string) => {
     if (!email || !email.includes("@")) {
       setEmailStatus("idle");
@@ -52,8 +61,19 @@ const StudentRegisterPage = () => {
     if (data) {
       setEmailStatus("authorized");
       setAuthorizedEmail(data);
-      // Auto-fill school year from authorized email
       setFormData(prev => ({ ...prev, schoolYear: data.school_year || "1" }));
+      
+      // Load parent's district and schools
+      const { data: parentProfile } = await supabase
+        .from("profiles")
+        .select("district")
+        .eq("user_id", data.parent_id)
+        .single();
+      
+      if (parentProfile?.district) {
+        setParentDistrict(parentProfile.district as string);
+        loadSchools(parentProfile.district as string);
+      }
     } else {
       setEmailStatus("not_authorized");
       setAuthorizedEmail(null);
