@@ -327,13 +327,9 @@ const Index = () => {
             {/* Contact */}
             <div>
               <h3 className="font-display font-bold mb-3">Contacto</h3>
-              <p className="font-body text-sm text-muted-foreground mb-2">
+              <p className="font-body text-sm text-muted-foreground">
                 <Mail className="w-4 h-4 inline mr-1" />
                 info@serv2all.pt
-              </p>
-              <p className="font-body text-xs text-muted-foreground">
-                Hugo Alberto da Silva Martins<br />
-                NIF: 218246587
               </p>
             </div>
           </div>
