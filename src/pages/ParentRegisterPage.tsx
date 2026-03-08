@@ -129,7 +129,10 @@ const ParentRegisterPage = () => {
           </Button>
         </form>
 
-        <div className="mt-4 text-center">
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <Button variant="ghost" className="w-full font-body text-muted-foreground" onClick={() => navigate("/login")}>
+            ← Cancelar e voltar
+          </Button>
           <Link to="/login" className="text-sm text-accent underline font-body">Já tenho conta</Link>
         </div>
       </div>
