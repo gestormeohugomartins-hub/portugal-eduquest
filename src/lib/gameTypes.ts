@@ -25,6 +25,13 @@ export interface GridTile {
   buildingId?: string;
 }
 
+export type NaturalResourceType = 'wood' | 'stone' | 'iron' | 'coal' | 'food' | 'leather' | 'fish';
+
+export interface ResourceCost {
+  resource: NaturalResourceType;
+  amount: number;
+}
+
 export interface BuildingDef {
   id: string;
   name: string;
@@ -34,6 +41,7 @@ export interface BuildingDef {
   height: number;
   costCoins: number;
   costDiamonds: number;
+  resourceCosts: ResourceCost[];
   maxLevel: number;
   citizenBonus: number;
   defenseBonus: number;
