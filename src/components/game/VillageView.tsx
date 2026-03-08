@@ -522,7 +522,9 @@ export const VillageView = ({ student, onQuiz, onRefresh }: VillageViewProps) =>
         onTileClick={handleTileClick} onTileHover={handleTileHover} onBuildingClick={handleBuildingClick}
       />
 
-      <BuildMenu
+      {/* Tutorial */}
+      <TutorialOverlay buildings={buildings} onSelectBuilding={setSelectedBuilding} />
+
         selectedBuilding={selectedBuilding} onSelect={setSelectedBuilding}
         coins={student.coins} diamonds={student.diamonds}
         villageLevel={student.village_level} isPremium={student.is_premium}
