@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sendEmail, emailTemplates } from "@/lib/email";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -99,6 +100,19 @@ const StudentRegisterPage = () => {
 
       // Update profile role
       await supabase.from("profiles").update({ role: "student" as any }).eq("user_id", data.user.id);
+
+      // Send welcome email
+      try {
+        const welcomeTemplate = emailTemplates.welcome(formData.name);
+        await sendEmail({
+          to: formData.email.toLowerCase().trim(),
+          subject: welcomeTemplate.subject,
+          html: welcomeTemplate.html,
+        });
+      } catch (emailError) {
+        console.error("Failed to send welcome email:", emailError);
+        // Don't block registration if email fails
+      }
 
       toast.success("Registo efetuado! Verifica o teu email para confirmar a conta.");
       navigate("/login");
