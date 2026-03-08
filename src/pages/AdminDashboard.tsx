@@ -480,26 +480,28 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users">
-          <TabsList className="w-full grid grid-cols-6 mb-6">
-            <TabsTrigger value="users" className="font-body text-xs">
-              <Users className="w-4 h-4 mr-1" /> Utilizadores
-            </TabsTrigger>
-            <TabsTrigger value="associations" className="font-body text-xs">
-              <Building2 className="w-4 h-4 mr-1" /> Associações
-            </TabsTrigger>
-            <TabsTrigger value="promos" className="font-body text-xs">
-              <Tag className="w-4 h-4 mr-1" /> Promos
-            </TabsTrigger>
-            <TabsTrigger value="premium" className="font-body text-xs">
-              <Crown className="w-4 h-4 mr-1" /> Premium
-            </TabsTrigger>
-            <TabsTrigger value="create" className="font-body text-xs">
-              <UserPlus className="w-4 h-4 mr-1" /> Criar
-            </TabsTrigger>
-            <TabsTrigger value="admins" className="font-body text-xs">
-              <Shield className="w-4 h-4 mr-1" /> Admins
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 mb-6">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-6 sm:w-full">
+              <TabsTrigger value="users" className="font-body text-xs gap-1 whitespace-nowrap">
+                <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Utilizadores</span><span className="sm:hidden">Users</span>
+              </TabsTrigger>
+              <TabsTrigger value="associations" className="font-body text-xs gap-1 whitespace-nowrap">
+                <Building2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Associações</span><span className="sm:hidden">Assoc.</span>
+              </TabsTrigger>
+              <TabsTrigger value="promos" className="font-body text-xs gap-1 whitespace-nowrap">
+                <Tag className="w-3.5 h-3.5" /> Promos
+              </TabsTrigger>
+              <TabsTrigger value="premium" className="font-body text-xs gap-1 whitespace-nowrap">
+                <Crown className="w-3.5 h-3.5" /> Premium
+              </TabsTrigger>
+              <TabsTrigger value="create" className="font-body text-xs gap-1 whitespace-nowrap">
+                <UserPlus className="w-3.5 h-3.5" /> Criar
+              </TabsTrigger>
+              <TabsTrigger value="admins" className="font-body text-xs gap-1 whitespace-nowrap">
+                <Shield className="w-3.5 h-3.5" /> Admins
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* USERS TAB */}
           <TabsContent value="users">

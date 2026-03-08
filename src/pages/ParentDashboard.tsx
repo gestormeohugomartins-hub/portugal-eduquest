@@ -313,10 +313,10 @@ const ParentDashboard = () => {
                 </div>
               ) : (
                 children.map(child => (
-                  <div key={child.id} className="game-border bg-card p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-body font-bold">{child.display_name}</h3>
+                  <div key={child.id} className="game-border bg-card p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="font-body font-bold truncate">{child.display_name}</h3>
                         {child.nickname && (
                           <p className="font-body text-xs text-primary">🎮 {child.nickname}</p>
                         )}
@@ -324,8 +324,8 @@ const ParentDashboard = () => {
                           {child.school_year}º Ano • Nível {child.village_level}
                         </p>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="flex gap-2 text-xs font-body">
+                      <div className="flex flex-col items-start sm:items-end gap-2">
+                        <div className="flex gap-1.5 sm:gap-2 text-xs font-body flex-wrap">
                           <span className="bg-gold/20 px-2 py-1 rounded">🪙 {child.coins}</span>
                           <span className="bg-diamond/20 px-2 py-1 rounded">💎 {child.diamonds}</span>
                           <span className="bg-citizen/20 px-2 py-1 rounded">👥 {child.citizens}</span>
@@ -342,7 +342,7 @@ const ParentDashboard = () => {
                         ) : (
                           <Button
                             size="sm"
-                            className="text-xs bg-gold text-foreground h-7"
+                            className="text-xs bg-gold text-foreground h-7 w-full sm:w-auto"
                             onClick={() => handleUpgradeChild(child)}
                           >
                             <Crown className="w-3 h-3 mr-1" />
