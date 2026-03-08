@@ -4,6 +4,7 @@
 import buildingsSprite from '@/assets/buildings-sprite.png';
 import mansionSprite from '@/assets/building-mansion.png';
 import monumentsSprite from '@/assets/monuments-sprite.png';
+import extraSprite from '@/assets/buildings-extra.png';
 
 export interface SpriteRegion {
   image: string;
