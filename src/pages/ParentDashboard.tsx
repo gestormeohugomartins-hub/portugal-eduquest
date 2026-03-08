@@ -282,18 +282,18 @@ const ParentDashboard = () => {
       {/* Content */}
       <div className="max-w-4xl mx-auto p-4">
         <Tabs defaultValue="children">
-          <TabsList className="w-full grid grid-cols-4 mb-6">
-            <TabsTrigger value="children" className="font-body text-xs">
-              <Users className="w-4 h-4 mr-1" /> Educandos
+          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 mb-6">
+            <TabsTrigger value="children" className="font-body text-xs gap-1">
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Educandos</span><span className="sm:hidden">Filhos</span>
             </TabsTrigger>
-            <TabsTrigger value="progress" className="font-body text-xs">
-              <BookOpen className="w-4 h-4 mr-1" /> Progresso
+            <TabsTrigger value="progress" className="font-body text-xs gap-1">
+              <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Progresso
             </TabsTrigger>
-            <TabsTrigger value="social" className="font-body text-xs">
-              <MessageCircle className="w-4 h-4 mr-1" /> Social
+            <TabsTrigger value="social" className="font-body text-xs gap-1">
+              <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Social
             </TabsTrigger>
-            <TabsTrigger value="settings" className="font-body text-xs">
-              <Settings className="w-4 h-4 mr-1" /> Config
+            <TabsTrigger value="settings" className="font-body text-xs gap-1">
+              <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Config
             </TabsTrigger>
           </TabsList>
 
