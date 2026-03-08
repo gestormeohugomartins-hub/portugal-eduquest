@@ -341,10 +341,45 @@ const AdminDashboard = () => {
     );
   }
 
-  // Filtered lists
-  const studentUsers = allUsers.filter(u => u.app_role === "student");
-  const parentUsers = allUsers.filter(u => u.app_role === "parent" && !u.admin_role);
-  const adminUsers = allUsers.filter(u => u.admin_role);
+  // Filtered lists with search
+  const q = searchQuery.toLowerCase();
+  const filterBySearch = (u: AdminUser) =>
+    !q || u.display_name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+
+  const studentUsers = allUsers.filter(u => u.app_role === "student").filter(filterBySearch);
+  const parentUsers = allUsers.filter(u => u.app_role === "parent" && !u.admin_role).filter(filterBySearch);
+  const adminUsers = allUsers.filter(u => u.admin_role).filter(filterBySearch);
+
+  const allFiltered = [...studentUsers, ...parentUsers, ...adminUsers];
+  const totalPages = Math.max(1, Math.ceil(allFiltered.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedStudents = studentUsers;
+  const paginatedParents = parentUsers;
+
+  const Pagination = ({ total, filtered }: { total: number; filtered: number }) => {
+    if (filtered <= ITEMS_PER_PAGE) return null;
+    const pages = Math.ceil(filtered / ITEMS_PER_PAGE);
+    return (
+      <div className="flex items-center justify-between mt-3 px-1">
+        <p className="font-body text-xs text-muted-foreground">{filtered} registos</p>
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="ghost" disabled={safePage <= 1} onClick={() => setCurrentPage(p => p - 1)}>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <span className="font-body text-xs px-2">{safePage}/{pages}</span>
+          <Button size="sm" variant="ghost" disabled={safePage >= pages} onClick={() => setCurrentPage(p => p + 1)}>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const paginate = (list: AdminUser[]) => {
+    const start = (safePage - 1) * ITEMS_PER_PAGE;
+    return list.slice(start, start + ITEMS_PER_PAGE);
+  };
 
   const UserRow = ({ u }: { u: AdminUser }) => (
     <tr className="border-b border-border/50">
