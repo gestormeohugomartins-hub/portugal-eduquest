@@ -70,6 +70,6 @@ export function getSpriteImage(src: string): HTMLImageElement | null {
 
 // Preload all sprite sheets
 export function preloadSprites(): Promise<void> {
-  const sources = [buildingsSprite, mansionSprite, monumentsSprite];
+  const sources = [buildingsSprite, mansionSprite, monumentsSprite, extraSprite];
   return Promise.all(sources.map(loadSpriteImage)).then(() => {});
 }
