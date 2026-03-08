@@ -109,9 +109,18 @@ const GamePage = () => {
   }, []);
 
   const handleMonthlyTestStart = (testId: string, questionCount: number) => {
-    // For now, redirect to quiz with test mode
     toast.info(`Teste mensal iniciado! ${questionCount} perguntas.`);
     setShowQuiz(true);
+  };
+
+  const checkBuildingAchievements = async () => {
+    if (!studentData) return;
+    const { count } = await supabase.from("buildings").select("*", { count: "exact", head: true }).eq("student_id", studentData.id);
+    checkAchievements({
+      buildingCount: count || 0,
+      villageLevel: studentData.village_level,
+      isPremium: studentData.is_premium,
+    });
   };
 
   if (loading || !studentData) {
