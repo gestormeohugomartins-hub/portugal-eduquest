@@ -126,10 +126,26 @@ const GamePage = () => {
     });
   };
 
-  if (loading || !studentData) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center parchment-bg">
-        <p className="font-display text-xl">A carregar o jogo...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="font-body text-sm text-muted-foreground">A carregar...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!studentData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-3">
+          <p className="font-body text-base text-foreground">Não foi possível carregar os dados do jogador.</p>
+          <Button variant="outline" onClick={() => { signOut(); navigate("/login"); }}>
+            Voltar ao login
+          </Button>
+        </div>
       </div>
     );
   }
