@@ -15,6 +15,7 @@ import ParentResetStudentPage from "./pages/ParentResetStudentPage";
 import GamePage from "./pages/GamePage";
 import ParentDashboard from "./pages/ParentDashboard";
 import PlacementTestPage from "./pages/PlacementTestPage";
+import FAQPage from "./pages/FAQPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
