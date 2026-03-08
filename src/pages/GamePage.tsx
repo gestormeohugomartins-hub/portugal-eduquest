@@ -186,7 +186,7 @@ const GamePage = () => {
 
       {/* Main View */}
       <div className="pt-20 pb-20">
-        {view === "village" && <VillageView student={studentData} onQuiz={() => setShowQuiz(true)} />}
+        {view === "village" && <VillageView student={studentData} onQuiz={() => setShowQuiz(true)} onRefresh={refreshProfile} />}
         {view === "map" && <PortugalMap />}
         {view === "chat" && <ChatPanel studentId={studentData.id} />}
       </div>
