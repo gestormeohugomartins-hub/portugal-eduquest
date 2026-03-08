@@ -41,6 +41,62 @@ export type Database = {
         }
         Relationships: []
       }
+      battles: {
+        Row: {
+          battle_won: boolean | null
+          damage_dealt: number | null
+          ended_at: string | null
+          enemy_health: number
+          enemy_level: number
+          enemy_name: string
+          enemy_type: string
+          id: string
+          rewards_coins: number | null
+          rewards_diamonds: number | null
+          rewards_xp: number | null
+          started_at: string | null
+          student_id: string
+        }
+        Insert: {
+          battle_won?: boolean | null
+          damage_dealt?: number | null
+          ended_at?: string | null
+          enemy_health: number
+          enemy_level?: number
+          enemy_name: string
+          enemy_type: string
+          id?: string
+          rewards_coins?: number | null
+          rewards_diamonds?: number | null
+          rewards_xp?: number | null
+          started_at?: string | null
+          student_id: string
+        }
+        Update: {
+          battle_won?: boolean | null
+          damage_dealt?: number | null
+          ended_at?: string | null
+          enemy_health?: number
+          enemy_level?: number
+          enemy_name?: string
+          enemy_type?: string
+          id?: string
+          rewards_coins?: number | null
+          rewards_diamonds?: number | null
+          rewards_xp?: number | null
+          started_at?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battles_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buildings: {
         Row: {
           building_type: string
@@ -163,6 +219,231 @@ export type Database = {
           },
         ]
       }
+      missions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          mission_type: Database["public"]["Enums"]["mission_type"]
+          reward_coins: number | null
+          reward_diamonds: number | null
+          reward_xp: number | null
+          subject: Database["public"]["Enums"]["subject"] | null
+          target_count: number
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mission_type: Database["public"]["Enums"]["mission_type"]
+          reward_coins?: number | null
+          reward_diamonds?: number | null
+          reward_xp?: number | null
+          subject?: Database["public"]["Enums"]["subject"] | null
+          target_count?: number
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mission_type?: Database["public"]["Enums"]["mission_type"]
+          reward_coins?: number | null
+          reward_diamonds?: number | null
+          reward_xp?: number | null
+          subject?: Database["public"]["Enums"]["subject"] | null
+          target_count?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      monthly_test_results: {
+        Row: {
+          bonus_earned: boolean | null
+          completed_at: string | null
+          id: string
+          percentage: number
+          score: number
+          student_id: string
+          test_id: string
+          total_questions: number
+        }
+        Insert: {
+          bonus_earned?: boolean | null
+          completed_at?: string | null
+          id?: string
+          percentage: number
+          score: number
+          student_id: string
+          test_id: string
+          total_questions: number
+        }
+        Update: {
+          bonus_earned?: boolean | null
+          completed_at?: string | null
+          id?: string
+          percentage?: number
+          score?: number
+          student_id?: string
+          test_id?: string
+          total_questions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_test_results_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_test_results_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_tests: {
+        Row: {
+          bonus_coins: number | null
+          bonus_diamonds: number | null
+          bonus_xp: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          month: number
+          question_count: number | null
+          school_year: Database["public"]["Enums"]["school_year"]
+          subject: Database["public"]["Enums"]["subject"]
+          title: string
+          year: number
+        }
+        Insert: {
+          bonus_coins?: number | null
+          bonus_diamonds?: number | null
+          bonus_xp?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          month: number
+          question_count?: number | null
+          school_year: Database["public"]["Enums"]["school_year"]
+          subject: Database["public"]["Enums"]["subject"]
+          title: string
+          year: number
+        }
+        Update: {
+          bonus_coins?: number | null
+          bonus_diamonds?: number | null
+          bonus_xp?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          month?: number
+          question_count?: number | null
+          school_year?: Database["public"]["Enums"]["school_year"]
+          subject?: Database["public"]["Enums"]["subject"]
+          title?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      player_inventory: {
+        Row: {
+          id: string
+          item_id: string
+          purchased_at: string | null
+          quantity: number | null
+          student_id: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          purchased_at?: string | null
+          quantity?: number | null
+          student_id: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          purchased_at?: string | null
+          quantity?: number | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_inventory_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_inventory_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_missions: {
+        Row: {
+          assigned_at: string | null
+          completed: boolean | null
+          completed_at: string | null
+          expires_at: string
+          id: string
+          mission_id: string
+          progress: number | null
+          student_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          completed?: boolean | null
+          completed_at?: string | null
+          expires_at: string
+          id?: string
+          mission_id: string
+          progress?: number | null
+          student_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          completed?: boolean | null
+          completed_at?: string | null
+          expires_at?: string
+          id?: string
+          mission_id?: string
+          progress?: number | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_missions_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_missions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -274,6 +555,60 @@ export type Database = {
           },
         ]
       }
+      shop_items: {
+        Row: {
+          citizen_bonus: number | null
+          created_at: string | null
+          defense_bonus: number | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_available: boolean | null
+          item_type: Database["public"]["Enums"]["shop_item_type"]
+          min_school_year: Database["public"]["Enums"]["school_year"] | null
+          min_village_level: number | null
+          name: string
+          price_coins: number | null
+          price_diamonds: number | null
+          rarity: Database["public"]["Enums"]["item_rarity"]
+          xp_bonus: number | null
+        }
+        Insert: {
+          citizen_bonus?: number | null
+          created_at?: string | null
+          defense_bonus?: number | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          item_type: Database["public"]["Enums"]["shop_item_type"]
+          min_school_year?: Database["public"]["Enums"]["school_year"] | null
+          min_village_level?: number | null
+          name: string
+          price_coins?: number | null
+          price_diamonds?: number | null
+          rarity?: Database["public"]["Enums"]["item_rarity"]
+          xp_bonus?: number | null
+        }
+        Update: {
+          citizen_bonus?: number | null
+          created_at?: string | null
+          defense_bonus?: number | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          item_type?: Database["public"]["Enums"]["shop_item_type"]
+          min_school_year?: Database["public"]["Enums"]["school_year"] | null
+          min_village_level?: number | null
+          name?: string
+          price_coins?: number | null
+          price_diamonds?: number | null
+          rarity?: Database["public"]["Enums"]["item_rarity"]
+          xp_bonus?: number | null
+        }
+        Relationships: []
+      }
       students: {
         Row: {
           citizens: number
@@ -286,6 +621,7 @@ export type Database = {
           gender: string | null
           id: string
           parent_id: string
+          school_name: string | null
           school_year: Database["public"]["Enums"]["school_year"]
           updated_at: string
           user_id: string
@@ -303,6 +639,7 @@ export type Database = {
           gender?: string | null
           id?: string
           parent_id: string
+          school_name?: string | null
           school_year?: Database["public"]["Enums"]["school_year"]
           updated_at?: string
           user_id: string
@@ -320,6 +657,7 @@ export type Database = {
           gender?: string | null
           id?: string
           parent_id?: string
+          school_name?: string | null
           school_year?: Database["public"]["Enums"]["school_year"]
           updated_at?: string
           user_id?: string
@@ -391,8 +729,11 @@ export type Database = {
         | "acores"
         | "madeira"
       friendship_status: "pending_parent_approval" | "approved" | "rejected"
+      item_rarity: "common" | "rare" | "epic" | "legendary"
+      mission_type: "daily" | "weekly" | "monthly"
       resource_type: "coins" | "diamonds" | "citizens"
       school_year: "1" | "2" | "3" | "4"
+      shop_item_type: "building" | "decoration" | "powerup" | "defense"
       subject: "portugues" | "matematica" | "estudo_meio" | "ingles"
     }
     CompositeTypes: {
@@ -545,8 +886,11 @@ export const Constants = {
         "madeira",
       ],
       friendship_status: ["pending_parent_approval", "approved", "rejected"],
+      item_rarity: ["common", "rare", "epic", "legendary"],
+      mission_type: ["daily", "weekly", "monthly"],
       resource_type: ["coins", "diamonds", "citizens"],
       school_year: ["1", "2", "3", "4"],
+      shop_item_type: ["building", "decoration", "powerup", "defense"],
       subject: ["portugues", "matematica", "estudo_meio", "ingles"],
     },
   },
