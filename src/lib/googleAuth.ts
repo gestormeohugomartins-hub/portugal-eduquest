@@ -20,11 +20,7 @@ export const signInWithGoogle = async (redirectPath = "/") => {
     if (error) return { error };
 
     if (data?.url) {
-      const oauthUrl = new URL(data.url);
-      const allowedHosts = ["accounts.google.com"];
-      if (!allowedHosts.some(host => oauthUrl.hostname.endsWith(host))) {
-        return { error: new Error("Invalid OAuth redirect URL") };
-      }
+      // The URL points to Supabase auth which then redirects to Google
       window.location.href = data.url;
     }
 
