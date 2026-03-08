@@ -1,37 +1,105 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import villageHero from "@/assets/village-hero.png";
 import { Button } from "@/components/ui/button";
-import { Shield, BookOpen, Users, Map } from "lucide-react";
+import { Shield, BookOpen, Users, Map, ChevronDown, ChevronUp, Cookie, FileText, Mail } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [cookiesAccepted, setCookiesAccepted] = useState(
+    localStorage.getItem("cookiesAccepted") === "true"
+  );
+
+  const acceptCookies = () => {
+    localStorage.setItem("cookiesAccepted", "true");
+    setCookiesAccepted(true);
+  };
+
+  const faqItems = [
+    {
+      question: "O que é o Questeduca?",
+      answer: "O Questeduca é um jogo educativo online para crianças do 1º ao 4º ano do ensino básico. Combina aprendizagem com diversão através de perguntas do currículo nacional, construção de aldeias virtuais e interação social segura."
+    },
+    {
+      question: "Como funciona o jogo?",
+      answer: "Os alunos respondem a perguntas de Português, Matemática, Estudo do Meio e Inglês. Ao acertar, ganham moedas e diamantes que podem usar para construir e melhorar a sua aldeia. Quanto mais estudam, mais a aldeia cresce!"
+    },
+    {
+      question: "O jogo é seguro para crianças?",
+      answer: "Sim! O Questeduca foi desenhado com a segurança em primeiro lugar. Os pais registam-se primeiro e autorizam os emails dos educandos. Todas as amizades e conversas são monitorizadas pelos encarregados de educação através do painel parental."
+    },
+    {
+      question: "Como é feito o controlo parental?",
+      answer: "Os pais têm acesso a um painel completo onde podem ver o progresso escolar, aprovar pedidos de amizade, ler conversas, definir prioridades de disciplinas e gerir as contas dos educandos."
+    },
+    {
+      question: "Quanto custa o Questeduca?",
+      answer: "O Questeduca oferece uma versão gratuita com funcionalidades básicas. Versões premium com mais conteúdo e funcionalidades estarão disponíveis em breve."
+    },
+    {
+      question: "As perguntas seguem o currículo nacional?",
+      answer: "Sim! Todas as perguntas são baseadas no currículo nacional do 1º ciclo do ensino básico português, organizadas por ano de escolaridade e disciplina."
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
+    <div className="min-h-screen bg-background">
+      {/* Cookie Banner */}
+      {!cookiesAccepted && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t-2 border-border p-4 shadow-lg">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <Cookie className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
+              <p className="font-body text-sm text-muted-foreground">
+                Utilizamos cookies essenciais para o funcionamento do site e cookies analíticos para melhorar a sua experiência. 
+                Ao continuar, aceita a nossa <Link to="/privacy" className="text-primary hover:underline">Política de Privacidade</Link>.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={acceptCookies} size="sm" className="bg-primary text-primary-foreground">
+                Aceitar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="relative">
         <div 
-          className="absolute inset-0 bg-cover bg-center opacity-30"
+          className="absolute inset-0 bg-cover bg-center opacity-20"
           style={{ backgroundImage: `url(${villageHero})` }}
         />
-        <div className="relative z-10 flex flex-col items-center justify-center min-h-[80vh] px-4">
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-[70vh] px-4 pt-8">
           <img 
             src={logo} 
             alt="Questeduca" 
-            className="w-64 md:w-80 mb-8 animate-float drop-shadow-2xl"
+            className="w-56 md:w-72 mb-6 drop-shadow-xl"
           />
-          <h1 className="font-display text-3xl md:text-5xl font-bold text-foreground text-center mb-4 text-shadow-game">
+          <h1 className="font-display text-2xl md:text-4xl font-bold text-foreground text-center mb-3">
             Aprende, Constrói, Defende!
           </h1>
-          <p className="font-body text-lg md:text-xl text-muted-foreground text-center max-w-2xl mb-8">
-            O jogo educativo que transforma o estudo em aventura! Constrói a tua aldeia, 
-            responde a perguntas e protege-a de monstros e aliens!
+          <p className="font-body text-base md:text-lg text-muted-foreground text-center max-w-xl mb-6">
+            O jogo educativo que transforma o estudo em aventura para o 1º ciclo do ensino básico.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button 
               size="lg" 
-              className="bg-primary text-primary-foreground font-bold text-lg px-8 py-6 animate-pulse-gold"
+              className="bg-primary text-primary-foreground font-bold px-8 py-5"
               onClick={() => navigate("/register")}
             >
               🏰 Começar Aventura
@@ -39,65 +107,240 @@ const Index = () => {
             <Button 
               size="lg" 
               variant="outline"
-              className="border-2 border-foreground/20 font-bold text-lg px-8 py-6"
+              className="border-2 border-primary/30 font-bold px-8 py-5"
               onClick={() => navigate("/login")}
             >
-              ⚔️ Continuar Aventura
+              ⚔️ Entrar
             </Button>
           </div>
         </div>
       </div>
 
       {/* Features */}
-      <div className="py-16 px-4">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { icon: BookOpen, title: "Aprender", desc: "Perguntas do 1º ao 4º ano seguindo o currículo nacional", color: "bg-accent text-accent-foreground" },
-            { icon: Shield, title: "Construir", desc: "Constrói e melhora a tua aldeia com as moedas que ganhas", color: "bg-secondary text-secondary-foreground" },
-            { icon: Users, title: "Socializar", desc: "Faz amigos, visita aldeias e ajuda colegas em todo o Portugal", color: "bg-primary text-primary-foreground" },
-            { icon: Map, title: "Explorar", desc: "Mapa de Portugal com aldeias de todos os jogadores por distrito", color: "bg-diamond text-diamond-foreground" },
-          ].map((feature, i) => (
-            <div
-              key={feature.title}
-              className="parchment-bg game-border p-6 text-center animate-slide-up"
-              style={{ animationDelay: `${i * 0.15}s` }}
-            >
-              <div className={`w-16 h-16 ${feature.color} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                <feature.icon className="w-8 h-8" />
+      <div className="py-12 px-4 bg-muted/30">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-center mb-8">
+            Como Funciona
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { icon: BookOpen, title: "Aprender", desc: "Perguntas do 1º ao 4º ano", color: "bg-accent" },
+              { icon: Shield, title: "Construir", desc: "Melhora a tua aldeia", color: "bg-secondary" },
+              { icon: Users, title: "Socializar", desc: "Faz amigos seguros", color: "bg-primary" },
+              { icon: Map, title: "Explorar", desc: "Mapa de Portugal", color: "bg-diamond" },
+            ].map((feature) => (
+              <div
+                key={feature.title}
+                className="bg-card rounded-xl p-5 text-center border border-border hover:border-primary/50 transition-colors"
+              >
+                <div className={`w-12 h-12 ${feature.color} rounded-full flex items-center justify-center mx-auto mb-3`}>
+                  <feature.icon className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <h3 className="font-display text-lg font-bold mb-1">{feature.title}</h3>
+                <p className="font-body text-muted-foreground text-sm">{feature.desc}</p>
               </div>
-              <h3 className="font-display text-xl font-bold mb-2">{feature.title}</h3>
-              <p className="font-body text-muted-foreground text-sm">{feature.desc}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Parental Control Banner */}
-      <div className="py-12 px-4 parchment-bg">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-display text-2xl md:text-3xl font-bold mb-4">
-            🛡️ Controlo Parental Total
+      {/* Parental Control */}
+      <div className="py-12 px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
+          <h2 className="font-display text-2xl md:text-3xl font-bold mb-3">
+            Controlo Parental Total
           </h2>
-          <p className="font-body text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Os pais registam-se primeiro, autorizam os emails dos educandos, monitorizam amizades, 
-            conversas e evolução escolar. Podem definir prioridades por disciplina.
+          <p className="font-body text-muted-foreground mb-6">
+            Os pais registam-se primeiro, autorizam os educandos, monitorizam amizades e conversas, 
+            e acompanham a evolução escolar em tempo real.
           </p>
           <Button 
-            variant="outline" 
-            size="lg"
-            className="border-2 border-foreground/20 font-bold"
+            variant="outline"
             onClick={() => navigate("/register")}
           >
-            Saber Mais sobre Controlo Parental
+            Saber Mais
           </Button>
         </div>
       </div>
 
+      {/* FAQ */}
+      <div className="py-12 px-4 bg-muted/30">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-center mb-8">
+            Perguntas Frequentes
+          </h2>
+          <Accordion type="single" collapsible className="space-y-2">
+            {faqItems.map((item, index) => (
+              <AccordionItem 
+                key={index} 
+                value={`item-${index}`}
+                className="bg-card border border-border rounded-lg px-4"
+              >
+                <AccordionTrigger className="font-body font-semibold text-left hover:no-underline">
+                  {item.question}
+                </AccordionTrigger>
+                <AccordionContent className="font-body text-muted-foreground">
+                  {item.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </div>
+
       {/* Footer */}
-      <footer className="py-6 px-4 text-center">
-        <p className="font-body text-sm text-muted-foreground">
-          Questeduca © 2026 — Jogo educativo para o 1º Ciclo do Ensino Básico
-        </p>
+      <footer className="py-8 px-4 border-t border-border">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {/* Company Info */}
+            <div>
+              <h3 className="font-display font-bold mb-3">Questeduca</h3>
+              <p className="font-body text-sm text-muted-foreground">
+                Jogo educativo para o 1º Ciclo do Ensino Básico em Portugal.
+              </p>
+            </div>
+            
+            {/* Legal Links */}
+            <div>
+              <h3 className="font-display font-bold mb-3">Legal</h3>
+              <div className="space-y-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="font-body text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+                      <FileText className="w-4 h-4" /> Termos de Utilização
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="font-display text-xl">Termos de Utilização</DialogTitle>
+                    </DialogHeader>
+                    <div className="font-body text-sm text-muted-foreground space-y-4">
+                      <p><strong>Última atualização:</strong> Março 2026</p>
+                      
+                      <h4 className="font-semibold text-foreground">1. Aceitação dos Termos</h4>
+                      <p>Ao aceder e utilizar o Questeduca, aceita estar vinculado a estes Termos de Utilização. Se não concordar com alguma parte destes termos, não deve utilizar o serviço.</p>
+                      
+                      <h4 className="font-semibold text-foreground">2. Descrição do Serviço</h4>
+                      <p>O Questeduca é uma plataforma educativa online destinada a crianças do 1º ao 4º ano do ensino básico, com supervisão parental obrigatória.</p>
+                      
+                      <h4 className="font-semibold text-foreground">3. Registo e Conta</h4>
+                      <p>O registo de menores requer autorização prévia do encarregado de educação. Os pais são responsáveis pela veracidade dos dados fornecidos e pela supervisão da utilização pelos seus educandos.</p>
+                      
+                      <h4 className="font-semibold text-foreground">4. Utilização Aceitável</h4>
+                      <p>Os utilizadores comprometem-se a utilizar a plataforma de forma responsável, respeitando os outros utilizadores e não partilhando conteúdo inadequado.</p>
+                      
+                      <h4 className="font-semibold text-foreground">5. Propriedade Intelectual</h4>
+                      <p>Todo o conteúdo do Questeduca, incluindo textos, imagens, logótipos e software, é propriedade exclusiva do titular e está protegido por direitos de autor.</p>
+                      
+                      <h4 className="font-semibold text-foreground">6. Limitação de Responsabilidade</h4>
+                      <p>O Questeduca é fornecido "tal como está". Não garantimos que o serviço seja ininterrupto ou livre de erros.</p>
+                      
+                      <h4 className="font-semibold text-foreground">7. Lei Aplicável</h4>
+                      <p>Estes termos são regidos pela lei portuguesa. Qualquer litígio será submetido aos tribunais portugueses competentes.</p>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="font-body text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+                      <Shield className="w-4 h-4" /> Política de Privacidade
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="font-display text-xl">Política de Privacidade</DialogTitle>
+                    </DialogHeader>
+                    <div className="font-body text-sm text-muted-foreground space-y-4">
+                      <p><strong>Última atualização:</strong> Março 2026</p>
+                      <p>Em conformidade com o Regulamento Geral sobre a Proteção de Dados (RGPD) - Regulamento (UE) 2016/679.</p>
+                      
+                      <h4 className="font-semibold text-foreground">1. Responsável pelo Tratamento</h4>
+                      <p>Hugo Alberto da Silva Martins<br />NIF: 218246587<br />Contacto: info@serv2all.pt</p>
+                      
+                      <h4 className="font-semibold text-foreground">2. Dados Recolhidos</h4>
+                      <p>Recolhemos: nome, email, distrito, ano de escolaridade, dados de progresso no jogo e interações sociais dentro da plataforma.</p>
+                      
+                      <h4 className="font-semibold text-foreground">3. Finalidade do Tratamento</h4>
+                      <p>Os dados são utilizados para: funcionamento da plataforma, personalização da experiência educativa, comunicações essenciais e cumprimento de obrigações legais.</p>
+                      
+                      <h4 className="font-semibold text-foreground">4. Base Legal</h4>
+                      <p>O tratamento baseia-se no consentimento do titular (ou do encarregado de educação no caso de menores) e na execução do contrato de utilização.</p>
+                      
+                      <h4 className="font-semibold text-foreground">5. Direitos do Titular</h4>
+                      <p>Tem direito a: aceder, retificar, apagar, limitar o tratamento, portabilidade e oposição ao tratamento dos seus dados. Para exercer estes direitos, contacte info@serv2all.pt.</p>
+                      
+                      <h4 className="font-semibold text-foreground">6. Proteção de Menores</h4>
+                      <p>Os dados de menores são tratados com especial cuidado. O registo requer autorização parental e os pais têm acesso total às atividades dos educandos.</p>
+                      
+                      <h4 className="font-semibold text-foreground">7. Retenção de Dados</h4>
+                      <p>Os dados são conservados enquanto a conta estiver ativa. Após eliminação da conta, os dados são removidos no prazo de 30 dias, exceto quando exigido por lei.</p>
+                      
+                      <h4 className="font-semibold text-foreground">8. Segurança</h4>
+                      <p>Implementamos medidas técnicas e organizativas adequadas para proteger os dados contra acesso não autorizado, perda ou destruição.</p>
+                      
+                      <h4 className="font-semibold text-foreground">9. Autoridade de Controlo</h4>
+                      <p>Pode apresentar reclamação à Comissão Nacional de Proteção de Dados (CNPD) em www.cnpd.pt.</p>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="font-body text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+                      <Cookie className="w-4 h-4" /> Política de Cookies
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="font-display text-xl">Política de Cookies</DialogTitle>
+                    </DialogHeader>
+                    <div className="font-body text-sm text-muted-foreground space-y-4">
+                      <p><strong>Última atualização:</strong> Março 2026</p>
+                      
+                      <h4 className="font-semibold text-foreground">O que são Cookies?</h4>
+                      <p>Cookies são pequenos ficheiros de texto armazenados no seu dispositivo quando visita um website. São amplamente utilizados para fazer os websites funcionarem de forma mais eficiente.</p>
+                      
+                      <h4 className="font-semibold text-foreground">Cookies que Utilizamos</h4>
+                      <p><strong>Cookies Essenciais:</strong> Necessários para o funcionamento básico do site, incluindo autenticação e segurança. Não podem ser desativados.</p>
+                      <p><strong>Cookies de Sessão:</strong> Mantêm a sua sessão ativa enquanto utiliza a plataforma. São eliminados quando fecha o navegador.</p>
+                      <p><strong>Cookies de Preferências:</strong> Guardam as suas preferências, como o estado de aceitação de cookies.</p>
+                      
+                      <h4 className="font-semibold text-foreground">Cookies de Terceiros</h4>
+                      <p>Não utilizamos cookies de publicidade ou rastreamento de terceiros. A privacidade das crianças é a nossa prioridade.</p>
+                      
+                      <h4 className="font-semibold text-foreground">Como Gerir Cookies</h4>
+                      <p>Pode configurar o seu navegador para recusar cookies, mas algumas funcionalidades do site podem não funcionar corretamente.</p>
+                      
+                      <h4 className="font-semibold text-foreground">Contacto</h4>
+                      <p>Para questões sobre cookies, contacte: info@serv2all.pt</p>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+            
+            {/* Contact */}
+            <div>
+              <h3 className="font-display font-bold mb-3">Contacto</h3>
+              <p className="font-body text-sm text-muted-foreground mb-2">
+                <Mail className="w-4 h-4 inline mr-1" />
+                info@serv2all.pt
+              </p>
+              <p className="font-body text-xs text-muted-foreground">
+                Hugo Alberto da Silva Martins<br />
+                NIF: 218246587
+              </p>
+            </div>
+          </div>
+          
+          <div className="border-t border-border pt-6 text-center">
+            <p className="font-body text-xs text-muted-foreground">
+              © 2026 Questeduca. Todos os direitos reservados.
+            </p>
+          </div>
+        </div>
       </footer>
     </div>
   );
