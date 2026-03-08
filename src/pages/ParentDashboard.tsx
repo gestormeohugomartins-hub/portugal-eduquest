@@ -123,6 +123,25 @@ const ParentDashboard = () => {
     }
   };
 
+  const handleSaveDistrict = async () => {
+    if (!editDistrict) {
+      toast.error("Selecione um distrito");
+      return;
+    }
+    setSavingDistrict(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ district: editDistrict as any })
+      .eq("user_id", user!.id);
+    if (error) {
+      toast.error("Erro ao guardar distrito: " + error.message);
+    } else {
+      toast.success("Distrito atualizado!");
+      await refreshProfile();
+    }
+    setSavingDistrict(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center parchment-bg">
