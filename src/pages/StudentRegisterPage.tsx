@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEmail, emailTemplates } from "@/lib/email";
@@ -7,14 +7,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Search } from "lucide-react";
 import logo from "@/assets/logo.png";
+
+const districtLabels: Record<string, string> = {
+  aveiro: "Aveiro", beja: "Beja", braga: "Braga", braganca: "Bragança",
+  castelo_branco: "Castelo Branco", coimbra: "Coimbra", evora: "Évora",
+  faro: "Faro", guarda: "Guarda", leiria: "Leiria", lisboa: "Lisboa",
+  portalegre: "Portalegre", porto: "Porto", santarem: "Santarém",
+  setubal: "Setúbal", viana_castelo: "Viana do Castelo", vila_real: "Vila Real",
+  viseu: "Viseu", acores: "Açores", madeira: "Madeira",
+};
 
 const StudentRegisterPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: "", email: "", password: "", gender: "indefinido", schoolYear: "1",
+    name: "", email: "", password: "", gender: "indefinido", schoolYear: "1", schoolId: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "authorized" | "not_authorized">("idle");
+  const [authorizedEmail, setAuthorizedEmail] = useState<any>(null);
+  const [schools, setSchools] = useState<any[]>([]);
+  const [schoolSearch, setSchoolSearch] = useState("");
+  const [parentDistrict, setParentDistrict] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "authorized" | "not_authorized">("idle");
   const [authorizedEmail, setAuthorizedEmail] = useState<any>(null);
