@@ -41,6 +41,7 @@ const App = () => (
             <Route path="/parent" element={<ParentDashboard />} />
             <Route path="/placement-test" element={<PlacementTestPage />} />
             <Route path="/faq" element={<FAQPage />} />
+            <Route path="/register/association" element={<AssociationRegisterPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

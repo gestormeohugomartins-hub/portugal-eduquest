@@ -263,6 +263,14 @@ const Index = () => {
             >
               🛡️ Controlo Parental
             </Button>
+            <Button 
+              variant="outline" 
+              size="lg"
+              className="border-2 border-primary/30 font-bold"
+              onClick={() => navigate("/register/association")}
+            >
+              🏛️ Associações de Pais
+            </Button>
           </div>
         </div>
       </div>
