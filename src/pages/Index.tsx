@@ -96,7 +96,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="py-6 px-4 text-center">
         <p className="font-body text-sm text-muted-foreground">
-          EduQuest Portugal © 2026 — Jogo educativo para o 1º Ciclo do Ensino Básico
+          Questeduca © 2026 — Jogo educativo para o 1º Ciclo do Ensino Básico
         </p>
       </footer>
     </div>

@@ -97,7 +97,7 @@ const ForgotPasswordPage = () => {
     <div className="min-h-screen flex items-center justify-center px-4 parchment-bg">
       <div className="w-full max-w-md game-border p-8 bg-card">
         <div className="text-center mb-6">
-          <img src={logo} alt="EduQuest" className="w-24 mx-auto mb-3" />
+          <img src={logo} alt="Questeduca" className="w-24 mx-auto mb-3" />
           <h1 className="font-display text-2xl font-bold">Recuperar Palavra-passe</h1>
           <p className="font-body text-sm text-muted-foreground mt-2">
             Introduz o teu email e enviamos-te instruções para redefinir a palavra-passe
