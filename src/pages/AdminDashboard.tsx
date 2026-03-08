@@ -35,35 +35,41 @@ const AdminDashboard = () => {
 
   const checkAdminRole = async () => {
     try {
-      // Try to list admins - if it works, user is admin
       const { data, error } = await supabase.functions.invoke("manage-admins", {
-        body: { action: "list" },
+        body: { action: "check" },
       });
 
       if (error) {
-        // Check if no admins exist (bootstrap scenario)
+        console.error("Admin check error:", error);
         setIsAdmin(false);
         return;
       }
 
-      if (data?.roles) {
-        const userIsAdmin = data.roles.some((r: any) => r.user_id === user?.id);
-        if (userIsAdmin) {
-          setIsAdmin(true);
-          setAdminRoles(data.roles);
-          loadData();
-        } else if (data.roles.length === 0) {
-          // No admins exist - offer bootstrap
-          setIsAdmin(false);
-        } else {
-          setIsAdmin(false);
-          toast.error("Acesso restrito a administradores.");
-          navigate("/");
-        }
+      if (data?.noAdmins) {
+        // No admins exist - show bootstrap screen
+        setIsAdmin(false);
+        return;
+      }
+
+      if (data?.isAdmin) {
+        setIsAdmin(true);
+        loadAdminList();
+        loadData();
+      } else {
+        setIsAdmin(false);
+        toast.error("Acesso restrito a administradores.");
+        navigate("/");
       }
     } catch {
       setIsAdmin(false);
     }
+  };
+
+  const loadAdminList = async () => {
+    const { data } = await supabase.functions.invoke("manage-admins", {
+      body: { action: "list" },
+    });
+    if (data?.roles) setAdminRoles(data.roles);
   };
 
   const handleBootstrap = async () => {
