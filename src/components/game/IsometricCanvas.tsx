@@ -124,7 +124,7 @@ export const IsometricCanvas = ({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#1a3010';
+    ctx.fillStyle = '#0e200a';
     ctx.fillRect(0, 0, w, h);
 
     ctx.save();
@@ -134,7 +134,29 @@ export const IsometricCanvas = ({
 
     const time = timeRef.current;
 
-    // Draw tiles
+    // Draw wilderness tiles (outside village grid)
+    const wb = wildernessBorder;
+    for (let y = -wb; y < gridSize + wb; y++) {
+      for (let x = -wb; x < gridSize + wb; x++) {
+        if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) continue; // skip village tiles
+        // Check if there's a water tile here
+        const hasWater = terrainElements.some(
+          el => (el.type === 'river_tile' || el.type === 'lake_tile') && Math.floor(el.gx) === x && Math.floor(el.gy) === y
+        );
+        if (!hasWater) {
+          drawWildernessTile(ctx, x, y, TILE_W, TILE_H, gridSize);
+        }
+      }
+    }
+
+    // Draw water terrain elements (tiles) first
+    for (const el of terrainElements) {
+      if (el.type === 'river_tile' || el.type === 'lake_tile') {
+        drawTerrainElement(ctx, el, TILE_W, TILE_H, time);
+      }
+    }
+
+    // Draw village tiles
     for (let y = 0; y < gridSize; y++) {
       for (let x = 0; x < gridSize; x++) {
         const tile = fullGrid[y]?.[x];
@@ -142,6 +164,14 @@ export const IsometricCanvas = ({
         const { sx, sy } = gridToIso(x, y, TILE_W, TILE_H);
         drawIsoDiamond(ctx, sx, sy, tile.type, x, y, tile.buildingId, buildings);
       }
+    }
+
+    // Draw terrain elements (sorted by depth for proper overlap)
+    const sortedTerrain = terrainElements
+      .filter(el => el.type !== 'river_tile' && el.type !== 'lake_tile')
+      .sort((a, b) => (a.gx + a.gy) - (b.gx + b.gy));
+    for (const el of sortedTerrain) {
+      drawTerrainElement(ctx, el, TILE_W, TILE_H, time);
     }
 
     // Draw ghost
