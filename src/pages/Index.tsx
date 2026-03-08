@@ -5,12 +5,6 @@ import villageHero from "@/assets/village-hero.png";
 import { Button } from "@/components/ui/button";
 import { Shield, BookOpen, Users, Map, Cookie, FileText, Mail, MessageSquare, X } from "lucide-react";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
