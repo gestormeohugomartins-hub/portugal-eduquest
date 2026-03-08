@@ -107,8 +107,13 @@ const StudentRegisterPage = () => {
       return;
     }
 
-    if (!formData.nickname.trim()) {
-      toast.error("Deves escolher um nickname para o jogo");
+    if (!formData.nickname.trim() || formData.nickname.trim().length < 3) {
+      toast.error("O nickname deve ter pelo menos 3 caracteres");
+      return;
+    }
+
+    if (nicknameStatus === "taken") {
+      toast.error("Este nickname já está em uso. Escolhe outro.");
       return;
     }
     
