@@ -1091,6 +1091,7 @@ export type Database = {
       }
       students: {
         Row: {
+          annual_bonus_building: string | null
           association_code: string | null
           association_code_set_at: string | null
           citizens: number
@@ -1106,17 +1107,20 @@ export type Database = {
           max_xp_free: number
           nickname: string | null
           parent_id: string
+          premium_bonus_applied: boolean | null
           premium_expires_at: string | null
           quiz_reminders_enabled: boolean
           school_id: string | null
           school_name: string | null
           school_year: Database["public"]["Enums"]["school_year"]
+          subscription_type: string | null
           updated_at: string
           user_id: string
           village_level: number
           xp: number
         }
         Insert: {
+          annual_bonus_building?: string | null
           association_code?: string | null
           association_code_set_at?: string | null
           citizens?: number
@@ -1132,17 +1136,20 @@ export type Database = {
           max_xp_free?: number
           nickname?: string | null
           parent_id: string
+          premium_bonus_applied?: boolean | null
           premium_expires_at?: string | null
           quiz_reminders_enabled?: boolean
           school_id?: string | null
           school_name?: string | null
           school_year?: Database["public"]["Enums"]["school_year"]
+          subscription_type?: string | null
           updated_at?: string
           user_id: string
           village_level?: number
           xp?: number
         }
         Update: {
+          annual_bonus_building?: string | null
           association_code?: string | null
           association_code_set_at?: string | null
           citizens?: number
@@ -1158,11 +1165,13 @@ export type Database = {
           max_xp_free?: number
           nickname?: string | null
           parent_id?: string
+          premium_bonus_applied?: boolean | null
           premium_expires_at?: string | null
           quiz_reminders_enabled?: boolean
           school_id?: string | null
           school_name?: string | null
           school_year?: Database["public"]["Enums"]["school_year"]
+          subscription_type?: string | null
           updated_at?: string
           user_id?: string
           village_level?: number
