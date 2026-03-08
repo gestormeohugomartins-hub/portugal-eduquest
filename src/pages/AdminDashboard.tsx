@@ -562,36 +562,107 @@ const AdminDashboard = () => {
               {associations.length === 0 ? (
                 <p className="font-body text-muted-foreground">Nenhuma associação registada.</p>
               ) : (
-                associations.map((a) => (
-                  <div key={a.id} className="bg-card rounded-xl border border-border p-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <h3 className="font-body font-bold">{a.name}</h3>
-                        <p className="font-body text-sm text-muted-foreground">
-                          Presidente: {a.president_name} • Código: {a.association_code}
-                        </p>
-                        <p className="font-body text-sm text-muted-foreground">
-                          Email: {a.email} • IBAN: {a.iban || "N/D"}
-                        </p>
+                associations.map((a) => {
+                  const balance = Number(a.total_raised || 0) - Number(a.total_paid || 0);
+                  return (
+                    <div key={a.id} className="bg-card rounded-xl border border-border p-4 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <h3 className="font-body font-bold">{a.name}</h3>
+                          <p className="font-body text-sm text-muted-foreground">
+                            Presidente: {a.president_name} • Código: <strong>{a.association_code}</strong>
+                          </p>
+                          <p className="font-body text-sm text-muted-foreground">
+                            Email: {a.email} • IBAN: {a.iban || "N/D"}
+                          </p>
+                          {a.bank_account_holder && (
+                            <p className="font-body text-sm text-muted-foreground">
+                              Titular: {a.bank_account_holder}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-body px-2 py-1 rounded ${
+                            a.status === "approved" ? "bg-secondary/20 text-secondary" :
+                            a.status === "rejected" ? "bg-destructive/20 text-destructive" :
+                            "bg-accent/20 text-accent-foreground"
+                          }`}>
+                            {a.status === "approved" ? "Aprovada" : a.status === "rejected" ? "Rejeitada" : "Pendente"}
+                          </span>
+                          {a.status === "pending" && (
+                            <>
+                              <Button size="sm" onClick={() => handleAssociationStatus(a.id, "approved")} className="bg-secondary text-secondary-foreground text-xs">Aprovar</Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleAssociationStatus(a.id, "rejected")} className="text-xs">Rejeitar</Button>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-body px-2 py-1 rounded ${
-                          a.status === "approved" ? "bg-secondary/20 text-secondary" :
-                          a.status === "rejected" ? "bg-destructive/20 text-destructive" :
-                          "bg-accent/20 text-accent-foreground"
-                        }`}>
-                          {a.status === "approved" ? "Aprovada" : a.status === "rejected" ? "Rejeitada" : "Pendente"}
-                        </span>
-                        {a.status === "pending" && (
-                          <>
-                            <Button size="sm" onClick={() => handleAssociationStatus(a.id, "approved")} className="bg-secondary text-secondary-foreground text-xs">Aprovar</Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleAssociationStatus(a.id, "rejected")} className="text-xs">Rejeitar</Button>
-                          </>
-                        )}
-                      </div>
+
+                      {/* Financial Summary */}
+                      {a.status === "approved" && (
+                        <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+                          <div className="grid grid-cols-3 gap-3 text-center mb-3">
+                            <div>
+                              <p className="font-body text-xs text-muted-foreground">Total Angariado</p>
+                              <p className="font-display font-bold text-secondary">€{Number(a.total_raised || 0).toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className="font-body text-xs text-muted-foreground">Total Pago</p>
+                              <p className="font-display font-bold">€{Number(a.total_paid || 0).toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className="font-body text-xs text-muted-foreground">Em Dívida</p>
+                              <p className={`font-display font-bold ${balance > 0 ? "text-destructive" : "text-secondary"}`}>
+                                €{balance.toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                          {balance > 0 && (
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                max={balance}
+                                placeholder={`Valor a pagar (max €${balance.toFixed(2)})`}
+                                className="flex-1 text-sm"
+                                id={`pay-${a.id}`}
+                              />
+                              <Button
+                                size="sm"
+                                className="bg-secondary text-secondary-foreground text-xs whitespace-nowrap"
+                                onClick={async () => {
+                                  const input = document.getElementById(`pay-${a.id}`) as HTMLInputElement;
+                                  const amount = parseFloat(input?.value);
+                                  if (!amount || amount <= 0 || amount > balance) {
+                                    toast.error("Valor inválido.");
+                                    return;
+                                  }
+                                  const newPaid = Number(a.total_paid || 0) + amount;
+                                  const { error } = await supabase
+                                    .from("parent_associations")
+                                    .update({ total_paid: newPaid })
+                                    .eq("id", a.id);
+                                  if (error) {
+                                    toast.error("Erro ao registar pagamento.");
+                                  } else {
+                                    toast.success(`Pagamento de €${amount.toFixed(2)} registado para ${a.name}.`);
+                                    loadAssociations();
+                                  }
+                                }}
+                              >
+                                <CheckCircle className="w-3 h-3 mr-1" /> Registar Pagamento
+                              </Button>
+                            </div>
+                          )}
+                          {balance <= 0 && (
+                            <p className="font-body text-xs text-secondary text-center">✅ Sem valores em dívida</p>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </TabsContent>
