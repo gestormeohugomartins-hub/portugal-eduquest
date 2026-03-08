@@ -62,6 +62,7 @@ serve(async (req) => {
           created_at: u.created_at,
           banned: u.banned_until ? true : false,
           banned_until: u.banned_until,
+          email_confirmed: !!u.email_confirmed_at,
           display_name: profile?.display_name || student?.display_name || u.email,
           app_role: profile?.role || null,
           admin_role: role?.role || null,
