@@ -21,8 +21,8 @@ export const signInWithGoogle = async (redirectPath = "/") => {
 
     if (data?.url) {
       const oauthUrl = new URL(data.url);
-      const allowedHosts = ["accounts.google.com"];
-      if (!allowedHosts.some((host) => oauthUrl.hostname === host)) {
+      const allowedHosts = ["accounts.google.com", "gualjiiygyagcqydjltk.supabase.co"];
+      if (!allowedHosts.some((host) => oauthUrl.hostname.endsWith(host))) {
         return { error: new Error("Invalid OAuth redirect URL") };
       }
       window.location.href = data.url;
