@@ -74,8 +74,9 @@ const ParentRegisterPage = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      toast.error("A palavra-passe deve ter pelo menos 6 caracteres");
+    const pwValidation = validatePassword(formData.password);
+    if (!pwValidation.isValid) {
+      toast.error("Palavra-passe insegura: " + pwValidation.errors[0]);
       return;
     }
 
