@@ -96,22 +96,9 @@ serve(async (req) => {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-
-    if (action === "bootstrap") {
-      // First admin bootstrap - make the calling user super_admin
-      const { error } = await supabase
-        .from("user_roles")
-        .insert({ user_id: user.id, role: "super_admin" });
-
-      if (error) throw error;
-
-      return new Response(JSON.stringify({ success: true, message: "Bootstrapped as super_admin" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
     if (action === "add") {
-      // Find user by email
       const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
       if (listError) throw listError;
 
@@ -146,7 +133,6 @@ serve(async (req) => {
         });
       }
 
-      // Cannot remove own super_admin role
       if (targetUser.id === user.id) {
         return new Response(JSON.stringify({ error: "Cannot remove your own admin role" }), {
           status: 400,
@@ -162,26 +148,6 @@ serve(async (req) => {
       if (error) throw error;
 
       return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (action === "list") {
-      const { data: roles, error } = await supabase
-        .from("user_roles")
-        .select("*")
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-
-      // Get user emails
-      const { data: { users } } = await supabase.auth.admin.listUsers();
-      const rolesWithEmail = roles.map((r: any) => {
-        const u = users.find((u: any) => u.id === r.user_id);
-        return { ...r, email: u?.email || "unknown" };
-      });
-
-      return new Response(JSON.stringify({ roles: rolesWithEmail }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
