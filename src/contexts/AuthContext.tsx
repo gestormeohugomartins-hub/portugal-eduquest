@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [studentData, setStudentData] = useState<any>(null);
   const initialized = useRef(false);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
@@ -56,58 +56,68 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (studentError) {
           console.error("Error fetching student:", studentError);
         }
-        setStudentData(student);
+        setStudentData(student ?? null);
       } else {
         setStudentData(null);
       }
     } catch (err) {
       console.error("fetchProfile exception:", err);
+      setProfile(null);
+      setStudentData(null);
     }
-  };
+  }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) await fetchProfile(user.id);
-  };
+  }, [user, fetchProfile]);
 
   useEffect(() => {
-    // First get the initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
+    let cancelled = false;
+
+    // Get initial session
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      if (cancelled) return;
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      if (currentSession?.user) {
+        await fetchProfile(currentSession.user.id);
       }
       setLoading(false);
       initialized.current = true;
     });
 
-    // Then listen for auth changes (sign in, sign out, token refresh)
+    // Listen for auth changes AFTER initialization
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          // Use setTimeout to avoid Supabase auth deadlock
-          setTimeout(async () => {
-            await fetchProfile(session.user.id);
-            setLoading(false);
-          }, 0);
+      async (event, newSession) => {
+        if (cancelled) return;
+        
+        // Skip if not yet initialized to avoid race with getSession
+        if (!initialized.current) return;
+
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+
+        if (newSession?.user) {
+          await fetchProfile(newSession.user.id);
         } else {
           setProfile(null);
           setStudentData(null);
-          setLoading(false);
         }
+        setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setProfile(null);
     setStudentData(null);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider
