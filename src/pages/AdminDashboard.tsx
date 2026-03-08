@@ -480,7 +480,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users">
-          <TabsList className="w-full grid grid-cols-5 mb-6">
+          <TabsList className="w-full grid grid-cols-6 mb-6">
             <TabsTrigger value="users" className="font-body text-xs">
               <Users className="w-4 h-4 mr-1" /> Utilizadores
             </TabsTrigger>
@@ -489,6 +489,9 @@ const AdminDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="promos" className="font-body text-xs">
               <Tag className="w-4 h-4 mr-1" /> Promos
+            </TabsTrigger>
+            <TabsTrigger value="premium" className="font-body text-xs">
+              <Crown className="w-4 h-4 mr-1" /> Premium
             </TabsTrigger>
             <TabsTrigger value="create" className="font-body text-xs">
               <UserPlus className="w-4 h-4 mr-1" /> Criar
