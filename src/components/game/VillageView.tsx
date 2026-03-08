@@ -446,100 +446,102 @@ export const VillageView = ({ student, onQuiz, onRefresh, onPremium }: VillageVi
 
   return (
     <div className="relative h-[calc(100vh-10rem)]">
-      {/* Stats overlay */}
-      <div className="absolute top-2 left-2 z-20 flex gap-1.5 flex-wrap max-w-[70%]">
-        <div className="bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-body border border-border">
-          <Users className="w-3.5 h-3.5 text-citizen" />
-          <span className="font-bold">{stats.citizens}</span>
+      {/* Top action bar - single row with scroll */}
+      <div className="absolute top-1 left-1 right-1 z-20">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide pb-1">
+          <Button size="icon" variant="outline" onClick={toggleMusic}
+            className="h-7 w-7 flex-shrink-0 bg-card/90 backdrop-blur-sm"
+            title={musicOn ? 'Desligar música' : 'Ligar música'}>
+            {musicOn ? <Music className="w-3.5 h-3.5 text-primary" /> : <Volume2 className="w-3.5 h-3.5 text-muted-foreground" />}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => { setShowTrade(true); SFX.click(); }}
+            className="h-7 bg-card/90 backdrop-blur-sm text-[10px] px-2 flex-shrink-0">
+            <ArrowLeftRight className="w-3 h-3 mr-0.5" />Trade
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => { setShowExpansion(true); SFX.click(); }}
+            className="h-7 bg-card/90 backdrop-blur-sm text-[10px] px-2 flex-shrink-0">
+            <Maximize className="w-3 h-3 mr-0.5" />Expandir
+          </Button>
+          <Button size="sm" onClick={() => { onQuiz(); SFX.click(); }}
+            className="h-7 bg-primary text-primary-foreground font-bold shadow-lg text-[10px] px-2 flex-shrink-0">
+            <BookOpen className="w-3.5 h-3.5 mr-0.5" />Quiz
+          </Button>
         </div>
-        <div className="bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-body border border-border">
-          <Shield className="w-3.5 h-3.5 text-secondary" />
-          <span className="font-bold">{stats.defense}</span>
-        </div>
-        <div className="bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-body border border-border">
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
-          <span className="font-bold">{stats.xp} XP</span>
-        </div>
-        <div className="bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-body border border-border">
-          <Maximize className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="font-bold">{gridSize}×{gridSize}</span>
-        </div>
-        {/* Simulation stats */}
-        {simState && (
-          <>
-            <div className="bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-body border border-border" style={{ borderColor: SEASON_CONFIG[simState.season].color + '80' }}>
-              <span>{SEASON_CONFIG[simState.season].emoji}</span>
-              <span className="font-bold">{SEASON_CONFIG[simState.season].label}</span>
-              <span className="text-muted-foreground">×{simState.seasonMultiplier}</span>
-            </div>
-            <div className={`bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-body border ${simState.foodPerMin >= simState.foodConsumedPerMin ? 'border-green-500/50' : 'border-destructive/50'}`}>
-              <Apple className="w-3.5 h-3.5 text-green-500" />
-              <span className="font-bold">{simState.foodPerMin}/{simState.foodConsumedPerMin}</span>
-            </div>
-            <div className={`bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-body border ${simState.happiness >= 50 ? 'border-green-500/50' : 'border-destructive/50'}`}>
-              <Heart className={`w-3.5 h-3.5 ${simState.happiness >= 50 ? 'text-green-500' : 'text-destructive'}`} />
-              <span className="font-bold">{simState.happiness}%</span>
-            </div>
-            {simState.diseaseRisk > 30 && (
-              <div className="bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-body border border-destructive/50 animate-pulse">
-                <span className="text-xs">🤒</span>
-                <span className="font-bold text-destructive">{simState.diseaseRisk}%</span>
-              </div>
-            )}
-          </>
-        )}
-        {isFree && (
-          <div className="bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-body border border-gold/50">
-            <Lock className="w-3 h-3 text-gold" />
-            <span className="font-bold text-gold">{buildings.length}/{FREE_BUILDING_LIMIT}</span>
+      </div>
+
+      {/* Stats row - below action bar */}
+      <div className="absolute top-9 left-1 right-1 z-20">
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
+          <div className="bg-card/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5 text-[10px] font-body border border-border flex-shrink-0">
+            <Users className="w-3 h-3 text-citizen" />
+            <span className="font-bold">{stats.citizens}</span>
           </div>
-        )}
+          <div className="bg-card/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5 text-[10px] font-body border border-border flex-shrink-0">
+            <Shield className="w-3 h-3 text-secondary" />
+            <span className="font-bold">{stats.defense}</span>
+          </div>
+          <div className="bg-card/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5 text-[10px] font-body border border-border flex-shrink-0">
+            <Sparkles className="w-3 h-3 text-primary" />
+            <span className="font-bold">{stats.xp}</span>
+          </div>
+          <div className="bg-card/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5 text-[10px] font-body border border-border flex-shrink-0">
+            <Maximize className="w-3 h-3 text-muted-foreground" />
+            <span className="font-bold">{gridSize}²</span>
+          </div>
+          {simState && (
+            <>
+              <div className="bg-card/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5 text-[10px] font-body border border-border flex-shrink-0" style={{ borderColor: SEASON_CONFIG[simState.season].color + '80' }}>
+                <span className="text-[10px]">{SEASON_CONFIG[simState.season].emoji}</span>
+                <span className="font-bold">×{simState.seasonMultiplier}</span>
+              </div>
+              <div className={`bg-card/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5 text-[10px] font-body border flex-shrink-0 ${simState.foodPerMin >= simState.foodConsumedPerMin ? 'border-green-500/50' : 'border-destructive/50'}`}>
+                <Apple className="w-3 h-3 text-green-500" />
+                <span className="font-bold">{simState.foodPerMin}/{simState.foodConsumedPerMin}</span>
+              </div>
+              <div className={`bg-card/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5 text-[10px] font-body border flex-shrink-0 ${simState.happiness >= 50 ? 'border-green-500/50' : 'border-destructive/50'}`}>
+                <Heart className={`w-3 h-3 ${simState.happiness >= 50 ? 'text-green-500' : 'text-destructive'}`} />
+                <span className="font-bold">{simState.happiness}%</span>
+              </div>
+              {simState.diseaseRisk > 30 && (
+                <div className="bg-card/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5 text-[10px] font-body border border-destructive/50 animate-pulse flex-shrink-0">
+                  <span className="text-[10px]">🤒</span>
+                  <span className="font-bold text-destructive">{simState.diseaseRisk}%</span>
+                </div>
+              )}
+            </>
+          )}
+          {isFree && (
+            <div className="bg-card/90 backdrop-blur-sm rounded px-1.5 py-0.5 flex items-center gap-0.5 text-[10px] font-body border border-gold/50 flex-shrink-0">
+              <Lock className="w-3 h-3 text-gold" />
+              <span className="font-bold text-gold">{buildings.length}/{FREE_BUILDING_LIMIT}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Resource bar */}
-      <div className="absolute top-12 left-2 z-20">
+      <div className="absolute top-[4.25rem] left-1 z-20">
         <ResourceBar resources={resources} />
       </div>
 
       {xpLimited && (
-        <div className="absolute top-12 left-2 right-16 z-20 bg-destructive/90 text-destructive-foreground text-xs font-body px-3 py-1.5 rounded-lg backdrop-blur-sm animate-pulse">
+        <div className="absolute top-[4.25rem] left-1 right-1 z-20 bg-destructive/90 text-destructive-foreground text-[10px] font-body px-2 py-1 rounded backdrop-blur-sm animate-pulse">
           <Crown className="w-3 h-3 inline mr-1" />
-          XP máximo gratuito atingido! Faz upgrade Premium para continuar a evoluir.
+          XP máximo atingido! Upgrade Premium para continuar.
         </div>
       )}
 
       {/* Simulation alerts */}
       {simState && simState.complaints.length > 0 && (
-        <div className="absolute bottom-20 left-2 z-20 space-y-1 max-w-[200px]">
-          {simState.complaints.slice(0, 3).map((c, i) => (
-            <div key={i} className="bg-card/90 backdrop-blur-sm rounded-lg px-2 py-1 text-[10px] font-body border border-destructive/30 flex items-center gap-1">
+        <div className="absolute bottom-20 left-1 z-20 space-y-0.5 max-w-[180px]">
+          {simState.complaints.slice(0, 2).map((c, i) => (
+            <div key={i} className="bg-card/90 backdrop-blur-sm rounded px-1.5 py-0.5 text-[9px] font-body border border-destructive/30 flex items-center gap-0.5">
               <span>{c.emoji}</span>
               <span className="text-destructive">{c.message}</span>
             </div>
           ))}
         </div>
       )}
-
-      {/* Top right buttons */}
-      <div className="absolute top-2 right-2 z-20 flex gap-1.5">
-        <Button size="icon" variant="outline" onClick={toggleMusic}
-          className="h-8 w-8 bg-card/90 backdrop-blur-sm"
-          title={musicOn ? 'Desligar música' : 'Ligar música'}>
-          {musicOn ? <Music className="w-4 h-4 text-primary" /> : <Volume2 className="w-4 h-4 text-muted-foreground" />}
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => { setShowTrade(true); SFX.click(); }}
-          className="h-8 bg-card/90 backdrop-blur-sm text-xs">
-          <ArrowLeftRight className="w-3.5 h-3.5 mr-1" />Trade
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => { setShowExpansion(true); SFX.click(); }}
-          className="h-8 bg-card/90 backdrop-blur-sm text-xs">
-          <Maximize className="w-3.5 h-3.5 mr-1" />Expandir
-        </Button>
-        <Button size="sm" onClick={() => { onQuiz(); SFX.click(); }}
-          className="h-8 bg-primary text-primary-foreground font-bold animate-pulse shadow-lg">
-          <BookOpen className="w-4 h-4 mr-1" />Quiz
-        </Button>
-      </div>
 
       {/* Canvas */}
       <IsometricCanvas
