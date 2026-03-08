@@ -30,29 +30,72 @@ serve(async (req) => {
 
     const { action, email, role } = await req.json();
 
-    // Check if caller is super_admin (or if bootstrapping first admin)
+    // Check if any admin roles exist at all (using service role key - bypasses RLS)
     const { data: existingRoles } = await supabase
       .from("user_roles")
-      .select("*")
-      .limit(1);
+      .select("*");
 
     const isFirstAdmin = !existingRoles || existingRoles.length === 0;
 
-    if (!isFirstAdmin) {
-      const { data: callerRole } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "super_admin")
-        .single();
-
-      if (!callerRole) {
-        return new Response(JSON.stringify({ error: "Only super_admins can manage admin roles" }), {
+    // Bootstrap: allow if no admins exist
+    if (action === "bootstrap") {
+      if (!isFirstAdmin) {
+        return new Response(JSON.stringify({ error: "Admins already exist. Bootstrap not allowed." }), {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      const { error } = await supabase
+        .from("user_roles")
+        .insert({ user_id: user.id, role: "super_admin" });
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true, message: "Bootstrapped as super_admin" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+
+    // Check-role: anyone can ask if they're admin (returns boolean)
+    if (action === "check") {
+      const isAdmin = existingRoles?.some((r: any) => r.user_id === user.id) || false;
+      const noAdmins = isFirstAdmin;
+      return new Response(JSON.stringify({ isAdmin, noAdmins }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // All other actions require admin/super_admin
+    const callerIsAdmin = existingRoles?.some((r: any) => r.user_id === user.id);
+    const callerIsSuperAdmin = existingRoles?.some((r: any) => r.user_id === user.id && r.role === "super_admin");
+
+    if (!callerIsAdmin) {
+      return new Response(JSON.stringify({ error: "Access denied" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // List: any admin can list
+    if (action === "list") {
+      const { data: { users } } = await supabase.auth.admin.listUsers();
+      const rolesWithEmail = (existingRoles || []).map((r: any) => {
+        const u = users.find((u: any) => u.id === r.user_id);
+        return { ...r, email: u?.email || "unknown" };
+      });
+
+      return new Response(JSON.stringify({ roles: rolesWithEmail }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Add/remove require super_admin
+    if (!callerIsSuperAdmin) {
+      return new Response(JSON.stringify({ error: "Only super_admins can manage admin roles" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
 
     if (action === "bootstrap") {
       // First admin bootstrap - make the calling user super_admin
