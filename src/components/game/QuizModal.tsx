@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getRandomQuestions, Question } from "@/data/questions";
 import { supabase } from "@/integrations/supabase/client";
+import { BUILDING_DEFS } from "@/lib/gameTypes";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { X, Coins, Diamond, Users, Crown, HelpCircle } from "lucide-react";
@@ -44,8 +45,74 @@ export const QuizModal = ({ student, onClose }: QuizModalProps) => {
       return;
     }
 
-    const q = getRandomQuestions(student.school_year, 5);
-    setQuestions(q);
+    const loadQuestions = async () => {
+      // Get base curriculum questions (4 out of 5)
+      const baseQuestions = getRandomQuestions(student.school_year, 4);
+
+      // Try to fetch a monument question for buildings the player has built
+      let monumentQuestion: Question | null = null;
+      try {
+        const { data: playerBuildings } = await supabase
+          .from("buildings")
+          .select("building_type")
+          .eq("student_id", student.id);
+
+        if (playerBuildings && playerBuildings.length > 0) {
+          // Get building types that are monuments
+          const builtMonumentIds = playerBuildings
+            .map(b => b.building_type)
+            .filter(bt => BUILDING_DEFS[bt]?.category === "monument");
+
+          if (builtMonumentIds.length > 0) {
+            // Get monument_info IDs for these buildings
+            const { data: monumentInfos } = await supabase
+              .from("monument_info")
+              .select("id, building_def_id")
+              .in("building_def_id", builtMonumentIds);
+
+            if (monumentInfos && monumentInfos.length > 0) {
+              const monumentInfoIds = monumentInfos.map(m => m.id);
+              
+              // Fetch a random monument question matching school year
+              const { data: mQuestions } = await supabase
+                .from("monument_questions")
+                .select("*")
+                .in("monument_id", monumentInfoIds)
+                .eq("school_year", student.school_year)
+                .limit(10);
+
+              if (mQuestions && mQuestions.length > 0) {
+                const randomMQ = mQuestions[Math.floor(Math.random() * mQuestions.length)];
+                const mInfo = monumentInfos.find(m => m.id === randomMQ.monument_id);
+                monumentQuestion = {
+                  id: randomMQ.id,
+                  school_year: student.school_year as "1" | "2" | "3" | "4",
+                  subject: "estudo_meio",
+                  question_text: `🏛️ ${randomMQ.question_text}`,
+                  options: randomMQ.options as string[],
+                  correct_answer: randomMQ.correct_answer,
+                  difficulty: randomMQ.difficulty,
+                };
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching monument questions:", err);
+      }
+
+      // Combine: 4 base + 1 monument (or 5 base if no monument)
+      let allQuestions: Question[];
+      if (monumentQuestion) {
+        allQuestions = [...baseQuestions, monumentQuestion].sort(() => Math.random() - 0.5);
+      } else {
+        allQuestions = getRandomQuestions(student.school_year, 5);
+      }
+      
+      setQuestions(allQuestions);
+    };
+
+    loadQuestions();
     setReward(rewardTypes[Math.floor(Math.random() * rewardTypes.length)]);
   }, [student.school_year]);
 

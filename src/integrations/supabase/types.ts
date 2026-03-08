@@ -435,6 +435,92 @@ export type Database = {
         }
         Relationships: []
       }
+      monument_info: {
+        Row: {
+          building_def_id: string
+          created_at: string | null
+          description_long: string
+          description_short: string
+          district: string
+          educational_topic: string | null
+          full_name: string
+          fun_fact: string | null
+          historical_period: string | null
+          id: string
+          image_url: string | null
+          year_built: string | null
+        }
+        Insert: {
+          building_def_id: string
+          created_at?: string | null
+          description_long: string
+          description_short: string
+          district: string
+          educational_topic?: string | null
+          full_name: string
+          fun_fact?: string | null
+          historical_period?: string | null
+          id?: string
+          image_url?: string | null
+          year_built?: string | null
+        }
+        Update: {
+          building_def_id?: string
+          created_at?: string | null
+          description_long?: string
+          description_short?: string
+          district?: string
+          educational_topic?: string | null
+          full_name?: string
+          fun_fact?: string | null
+          historical_period?: string | null
+          id?: string
+          image_url?: string | null
+          year_built?: string | null
+        }
+        Relationships: []
+      }
+      monument_questions: {
+        Row: {
+          correct_answer: number
+          created_at: string | null
+          difficulty: number | null
+          id: string
+          monument_id: string
+          options: Json
+          question_text: string
+          school_year: string | null
+        }
+        Insert: {
+          correct_answer: number
+          created_at?: string | null
+          difficulty?: number | null
+          id?: string
+          monument_id: string
+          options: Json
+          question_text: string
+          school_year?: string | null
+        }
+        Update: {
+          correct_answer?: number
+          created_at?: string | null
+          difficulty?: number | null
+          id?: string
+          monument_id?: string
+          options?: Json
+          question_text?: string
+          school_year?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monument_questions_monument_id_fkey"
+            columns: ["monument_id"]
+            isOneToOne: false
+            referencedRelation: "monument_info"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
