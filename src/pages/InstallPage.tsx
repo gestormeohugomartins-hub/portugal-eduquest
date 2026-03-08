@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Smartphone, Monitor, Download, CheckCircle, ArrowLeft } from "lucide-react";
+import { Smartphone, Monitor, Download, CheckCircle, ArrowLeft, Apple, Play } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -9,16 +9,25 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+// TODO: Replace with actual store URLs once published
+const APP_STORE_URL = "https://apps.apple.com/app/questeduca/id0000000000";
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=pt.questeduca.app";
+
 const InstallPage = () => {
   const navigate = useNavigate();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [isNativeApp, setIsNativeApp] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    // Check if running inside Capacitor native app
+    const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
+    setIsNativeApp(isCapacitor);
+
+    // Check if already installed as PWA
+    if (window.matchMedia("(display-mode: standalone)").matches || isCapacitor) {
       setIsInstalled(true);
     }
 
@@ -27,30 +36,43 @@ const InstallPage = () => {
     setIsIOS(/iphone|ipad|ipod/.test(ua));
     setIsAndroid(/android/.test(ua));
 
-    // Listen for install prompt
+    // Listen for PWA install prompt
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
-    };
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
   }, []);
 
-  const handleInstall = async () => {
+  const handlePWAInstall = async () => {
     if (!deferredPrompt) return;
-
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === "accepted") {
-      setIsInstalled(true);
-    }
+    if (outcome === "accepted") setIsInstalled(true);
     setDeferredPrompt(null);
   };
+
+  if (isInstalled) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <img src={logo} alt="Questeduca" className="w-32 mx-auto mb-6" />
+          <div className="bg-secondary/10 border border-secondary/30 rounded-xl p-6 mb-6">
+            <CheckCircle className="w-12 h-12 text-secondary mx-auto mb-3" />
+            <h2 className="font-display text-lg font-bold mb-2">App Instalada!</h2>
+            <p className="font-body text-sm text-muted-foreground mb-4">
+              Questeduca já está instalada no teu dispositivo.
+            </p>
+            <Button onClick={() => navigate("/login")} className="bg-primary text-primary-foreground">
+              Entrar no Jogo
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
@@ -69,120 +91,105 @@ const InstallPage = () => {
         <h1 className="font-display text-2xl font-bold mb-2">
           Instalar Questeduca
         </h1>
-        <p className="font-body text-muted-foreground mb-8">
-          Instala a app no teu dispositivo para jogares em qualquer lugar, mesmo sem internet!
+        <p className="font-body text-muted-foreground mb-6">
+          Instala a app no teu dispositivo para uma experiência completa!
         </p>
 
-        {isInstalled ? (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-6">
-            <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
-            <h2 className="font-display text-lg font-bold text-green-800 mb-2">
-              App Instalada!
-            </h2>
-            <p className="font-body text-sm text-green-700 mb-4">
-              Questeduca já está instalada no teu dispositivo.
-            </p>
-            <Button onClick={() => navigate("/login")} className="bg-primary text-primary-foreground">
-              Entrar no Jogo
-            </Button>
+        {/* Native App Store Buttons - Priority */}
+        <div className="space-y-3 mb-6">
+          {(isIOS || (!isIOS && !isAndroid)) && (
+            <a
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-3 w-full bg-foreground text-background font-bold py-4 px-6 rounded-xl hover:opacity-90 transition-opacity"
+            >
+              <Apple className="w-6 h-6" />
+              <div className="text-left">
+                <p className="text-[10px] font-body opacity-80 leading-none">Disponível na</p>
+                <p className="font-display text-lg leading-tight">App Store</p>
+              </div>
+            </a>
+          )}
+
+          {(isAndroid || (!isIOS && !isAndroid)) && (
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-3 w-full bg-foreground text-background font-bold py-4 px-6 rounded-xl hover:opacity-90 transition-opacity"
+            >
+              <Play className="w-6 h-6" />
+              <div className="text-left">
+                <p className="text-[10px] font-body opacity-80 leading-none">Disponível no</p>
+                <p className="font-display text-lg leading-tight">Google Play</p>
+              </div>
+            </a>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="h-px flex-1 bg-border" />
+          <span className="font-body text-xs text-muted-foreground">ou instala via browser</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        {/* PWA Install */}
+        {deferredPrompt ? (
+          <Button
+            size="lg"
+            variant="outline"
+            className="w-full border-2 border-primary/30 font-bold py-6 mb-3"
+            onClick={handlePWAInstall}
+          >
+            <Download className="w-5 h-5 mr-2" />
+            Instalar via Browser
+          </Button>
+        ) : isIOS ? (
+          <div className="bg-card border border-border rounded-xl p-4 mb-4 text-left">
+            <h3 className="font-display text-sm font-bold mb-2 flex items-center gap-2">
+              <Smartphone className="w-4 h-4 text-primary" />
+              Alternativa: Instalar via Safari
+            </h3>
+            <ol className="font-body text-xs text-muted-foreground space-y-2">
+              <li>1. Toca no botão <strong>Partilhar</strong> (□↑) no Safari</li>
+              <li>2. Toca em <strong>"Adicionar ao ecrã principal"</strong></li>
+              <li>3. Confirma com <strong>"Adicionar"</strong></li>
+            </ol>
+          </div>
+        ) : isAndroid ? (
+          <div className="bg-card border border-border rounded-xl p-4 mb-4 text-left">
+            <h3 className="font-display text-sm font-bold mb-2 flex items-center gap-2">
+              <Smartphone className="w-4 h-4 text-primary" />
+              Alternativa: Instalar via Chrome
+            </h3>
+            <ol className="font-body text-xs text-muted-foreground space-y-2">
+              <li>1. Toca no menu <strong>⋮</strong> no Chrome</li>
+              <li>2. Toca em <strong>"Instalar app"</strong></li>
+              <li>3. Confirma com <strong>"Instalar"</strong></li>
+            </ol>
           </div>
         ) : (
-          <>
-            {/* Android / Chrome Install Button */}
-            {deferredPrompt && (
-              <Button
-                size="lg"
-                className="w-full bg-primary text-primary-foreground font-bold py-6 mb-4"
-                onClick={handleInstall}
-              >
-                <Download className="w-5 h-5 mr-2" />
-                Instalar App
-              </Button>
-            )}
-
-            {/* iOS Instructions */}
-            {isIOS && !deferredPrompt && (
-              <div className="bg-card border border-border rounded-xl p-6 mb-6 text-left">
-                <div className="flex items-center gap-3 mb-4">
-                  <Smartphone className="w-8 h-8 text-primary" />
-                  <h2 className="font-display text-lg font-bold">Instalar no iPhone/iPad</h2>
-                </div>
-                <ol className="font-body text-sm text-muted-foreground space-y-3">
-                  <li className="flex items-start gap-2">
-                    <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
-                    <span>Toca no botão <strong>Partilhar</strong> (ícone quadrado com seta) na barra do Safari</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
-                    <span>Desliza para baixo e toca em <strong>"Adicionar ao ecrã principal"</strong></span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
-                    <span>Toca em <strong>"Adicionar"</strong> no canto superior direito</span>
-                  </li>
-                </ol>
-              </div>
-            )}
-
-            {/* Android Instructions (fallback) */}
-            {isAndroid && !deferredPrompt && (
-              <div className="bg-card border border-border rounded-xl p-6 mb-6 text-left">
-                <div className="flex items-center gap-3 mb-4">
-                  <Smartphone className="w-8 h-8 text-primary" />
-                  <h2 className="font-display text-lg font-bold">Instalar no Android</h2>
-                </div>
-                <ol className="font-body text-sm text-muted-foreground space-y-3">
-                  <li className="flex items-start gap-2">
-                    <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
-                    <span>Toca no menu <strong>⋮</strong> (três pontos) no Chrome</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
-                    <span>Toca em <strong>"Instalar app"</strong> ou <strong>"Adicionar ao ecrã principal"</strong></span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
-                    <span>Confirma tocando em <strong>"Instalar"</strong></span>
-                  </li>
-                </ol>
-              </div>
-            )}
-
-            {/* Desktop Instructions */}
-            {!isIOS && !isAndroid && !deferredPrompt && (
-              <div className="bg-card border border-border rounded-xl p-6 mb-6 text-left">
-                <div className="flex items-center gap-3 mb-4">
-                  <Monitor className="w-8 h-8 text-primary" />
-                  <h2 className="font-display text-lg font-bold">Instalar no Computador</h2>
-                </div>
-                <p className="font-body text-sm text-muted-foreground mb-3">
-                  No Chrome, Edge ou outros browsers compatíveis:
-                </p>
-                <ol className="font-body text-sm text-muted-foreground space-y-2">
-                  <li>• Procura o ícone de instalação na barra de endereços</li>
-                  <li>• Ou usa o menu do browser → "Instalar Questeduca"</li>
-                </ol>
-              </div>
-            )}
-          </>
+          <div className="bg-card border border-border rounded-xl p-4 mb-4 text-left">
+            <h3 className="font-display text-sm font-bold mb-2 flex items-center gap-2">
+              <Monitor className="w-4 h-4 text-primary" />
+              Instalar no Computador
+            </h3>
+            <p className="font-body text-xs text-muted-foreground">
+              Procura o ícone de instalação na barra de endereços do Chrome ou Edge.
+            </p>
+          </div>
         )}
 
-        {/* Play in browser option */}
-        {!isInstalled && (
-          <Button
-            variant="outline"
-            className="w-full border-2 border-primary/30 font-bold"
-            onClick={() => navigate("/login")}
-          >
-            <Monitor className="w-4 h-4 mr-2" />
-            Continuar no Browser
-          </Button>
-        )}
-
-        <p className="font-body text-xs text-muted-foreground mt-6">
-          A app funciona em iPhone, iPad, Android, Windows, Mac e Linux.
-          <br />Não precisa de app store!
-        </p>
+        {/* Continue in browser */}
+        <Button
+          variant="ghost"
+          className="w-full text-muted-foreground"
+          onClick={() => navigate("/login")}
+        >
+          Continuar no Browser
+        </Button>
       </div>
     </div>
   );
