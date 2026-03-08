@@ -36,6 +36,8 @@ const StudentRegisterPage = () => {
     if (data) {
       setEmailStatus("authorized");
       setAuthorizedEmail(data);
+      // Auto-fill school year from authorized email
+      setFormData(prev => ({ ...prev, schoolYear: data.school_year || "1" }));
     } else {
       setEmailStatus("not_authorized");
       setAuthorizedEmail(null);
