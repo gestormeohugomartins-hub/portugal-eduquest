@@ -104,7 +104,7 @@ const PlacementTestPage = () => {
     <div className="min-h-screen flex items-center justify-center px-4 py-8 parchment-bg">
       <div className="w-full max-w-xl game-border p-8 bg-card">
         <div className="text-center mb-6">
-          <img src={logo} alt="EduQuest" className="w-20 mx-auto mb-3" />
+          <img src={logo} alt="Questeduca" className="w-20 mx-auto mb-3" />
           <h1 className="font-display text-xl font-bold">Teste de Posicionamento</h1>
           <p className="font-body text-sm text-muted-foreground">
             A testar o {currentYear}º ano — Pergunta {currentIndex + 1} de {questions.length}
