@@ -492,7 +492,15 @@ export const IsometricCanvas = ({
       const t = e.changedTouches[0];
       if (Math.abs(t.clientX - dragStart.x) + Math.abs(t.clientY - dragStart.y) < 10) {
         const pos = screenToGrid(t.clientX, t.clientY);
-        if (pos) onTileClick(pos.gx, pos.gy);
+        if (pos) {
+          onTileClick(pos.gx, pos.gy);
+        } else if (onTerrainClick) {
+          const worldPos = screenToWorldGrid(t.clientX, t.clientY);
+          if (worldPos) {
+            const el = findTerrainElement(worldPos.gx, worldPos.gy);
+            if (el) onTerrainClick(el);
+          }
+        }
       }
     }
     setDragging(false);
