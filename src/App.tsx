@@ -39,6 +39,7 @@ const App = () => (
             <Route path="/game" element={<GamePage />} />
             <Route path="/parent" element={<ParentDashboard />} />
             <Route path="/placement-test" element={<PlacementTestPage />} />
+            <Route path="/faq" element={<FAQPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

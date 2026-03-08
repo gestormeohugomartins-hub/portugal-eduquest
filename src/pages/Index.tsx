@@ -272,28 +272,30 @@ const Index = () => {
         </div>
       </div>
 
-      {/* FAQ */}
+      {/* FAQ & Parental Links */}
       <div className="py-12 px-4 bg-muted/30">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="font-display text-2xl md:text-3xl font-bold text-center mb-8">
-            Perguntas Frequentes
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="font-display text-2xl md:text-3xl font-bold mb-6">
+            Saber Mais
           </h2>
-          <Accordion type="single" collapsible className="space-y-2">
-            {faqItems.map((item, index) => (
-              <AccordionItem 
-                key={index} 
-                value={`item-${index}`}
-                className="bg-card border border-border rounded-lg px-4"
-              >
-                <AccordionTrigger className="font-body font-semibold text-left hover:no-underline">
-                  {item.question}
-                </AccordionTrigger>
-                <AccordionContent className="font-body text-muted-foreground">
-                  {item.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              variant="outline" 
+              size="lg"
+              className="border-2 border-primary/30 font-bold"
+              onClick={() => navigate("/faq")}
+            >
+              ❓ Perguntas Frequentes
+            </Button>
+            <Button 
+              variant="outline" 
+              size="lg"
+              className="border-2 border-primary/30 font-bold"
+              onClick={() => navigate("/register")}
+            >
+              🛡️ Controlo Parental
+            </Button>
+          </div>
         </div>
       </div>
 
