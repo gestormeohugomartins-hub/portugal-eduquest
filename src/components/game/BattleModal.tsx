@@ -11,8 +11,9 @@ interface BattleModalProps {
   onOpenChange: (open: boolean) => void;
   studentId: string;
   defenseLevel: number;
+  isPremium?: boolean;
   onBattleEnd: (won: boolean, coins: number, diamonds: number, xp: number) => void;
-  onAnswerQuestion: () => Promise<boolean>; // Returns true if answered correctly
+  onAnswerQuestion: () => Promise<boolean>;
 }
 
 const enemies = [
