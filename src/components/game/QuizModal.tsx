@@ -238,11 +238,11 @@ export const QuizModal = ({ student, onClose }: QuizModalProps) => {
         ) : (
           <>
             <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-1">
                 <span className="font-body text-sm font-bold">
                   Pergunta {currentIndex + 1}/{questions.length}
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {isReview && (
                     <span className="text-xs px-2 py-0.5 bg-accent rounded font-body">📖 Revisão</span>
                   )}
