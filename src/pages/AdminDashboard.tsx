@@ -8,7 +8,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { LogOut, Users, ShieldCheck, Building2, UserPlus, Trash2, Shield, Ban, CheckCircle, Pencil, Eye, EyeOff } from "lucide-react";
+import { LogOut, Users, ShieldCheck, Building2, UserPlus, Trash2, Shield, Ban, CheckCircle, Pencil, Eye, EyeOff, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 
