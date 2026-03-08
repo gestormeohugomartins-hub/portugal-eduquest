@@ -486,6 +486,14 @@ export const VillageView = ({ student, onQuiz, onRefresh }: VillageViewProps) =>
         coins={student.coins} diamonds={student.diamonds}
       />
 
+      <TradePanel
+        studentId={student.id}
+        coins={student.coins}
+        open={showTrade}
+        onOpenChange={setShowTrade}
+        onRefresh={onRefresh}
+      />
+
       <ExpansionPanel
         open={showExpansion} onOpenChange={setShowExpansion}
         currentSize={gridSize} coins={student.coins} diamonds={student.diamonds}
