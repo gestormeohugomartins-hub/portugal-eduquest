@@ -133,7 +133,9 @@ export const QuizModal = ({ student, onClose }: QuizModalProps) => {
     } else {
       setQuizComplete(true);
       if (correctCount >= 3) {
-        const rewardAmount = Math.round(reward.amount * (correctCount / 5));
+        const premiumMultiplier = isPremium ? 1.15 : 1;
+        const rewardAmount = Math.round(reward.amount * (correctCount / 5) * premiumMultiplier);
+        const xpGain = Math.round(correctCount * 10 * premiumMultiplier);
         const { data: currentStudent } = await supabase
           .from("students")
           .select("coins, diamonds, citizens, xp")
@@ -145,7 +147,7 @@ export const QuizModal = ({ student, onClose }: QuizModalProps) => {
           if (reward.type === "coins") updateData.coins = currentStudent.coins + rewardAmount;
           else if (reward.type === "diamonds") updateData.diamonds = currentStudent.diamonds + rewardAmount;
           else updateData.citizens = currentStudent.citizens + rewardAmount;
-          updateData.xp = currentStudent.xp + correctCount * 10;
+          updateData.xp = currentStudent.xp + xpGain;
 
           await supabase.from("students").update(updateData).eq("id", student.id);
         }
