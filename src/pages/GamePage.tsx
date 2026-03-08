@@ -35,7 +35,7 @@ const GamePage = () => {
   const [showMonthlyTest, setShowMonthlyTest] = useState(false);
   const [battleQuizCallback, setBattleQuizCallback] = useState<(() => Promise<boolean>) | null>(null);
   const [showPremium, setShowPremium] = useState(false);
-
+  const { achievements, unlocked, checkAchievements } = useAchievements(studentData?.id);
   useEffect(() => {
     if (!loading && !user) navigate("/login");
     if (!loading && user && !isStudent) navigate("/parent");
