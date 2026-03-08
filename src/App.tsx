@@ -45,6 +45,7 @@ const App = () => (
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/register/association" element={<AssociationRegisterPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/install" element={<InstallPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

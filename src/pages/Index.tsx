@@ -196,33 +196,20 @@ const Index = () => {
               Disponível em todas as plataformas
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <a
-                href="https://play.google.com/store/apps/details?id=app.lovable.381d72f5897a457e979e5888fd33045b"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-foreground text-background rounded-xl px-5 py-3 font-body font-bold text-sm hover:opacity-90 transition-opacity"
+              <Button
+                size="lg"
+                className="bg-foreground text-background font-bold rounded-xl px-6 py-6 h-auto hover:opacity-90"
+                onClick={() => navigate("/install")}
               >
-                <Smartphone className="w-5 h-5" />
+                <Smartphone className="w-5 h-5 mr-2" />
                 <div className="text-left">
-                  <span className="text-[10px] font-normal opacity-70 block leading-none">Disponível no</span>
-                  Google Play
+                  <span className="text-[10px] font-normal opacity-70 block leading-none">Instalar no</span>
+                  Telemóvel / Tablet
                 </div>
-              </a>
-              <a
-                href="https://apps.apple.com/app/questeduca/id000000000"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-foreground text-background rounded-xl px-5 py-3 font-body font-bold text-sm hover:opacity-90 transition-opacity"
-              >
-                <Smartphone className="w-5 h-5" />
-                <div className="text-left">
-                  <span className="text-[10px] font-normal opacity-70 block leading-none">Disponível na</span>
-                  App Store
-                </div>
-              </a>
+              </Button>
               <Button
                 variant="outline"
-                className="border-2 border-primary/30 font-bold rounded-xl px-5 py-3 h-auto"
+                className="border-2 border-primary/30 font-bold rounded-xl px-6 py-6 h-auto"
                 onClick={() => navigate("/login")}
               >
                 <Monitor className="w-5 h-5 mr-2" />
@@ -232,6 +219,9 @@ const Index = () => {
                 </div>
               </Button>
             </div>
+            <p className="font-body text-xs text-muted-foreground text-center mt-3">
+              Funciona em iPhone, Android, Windows, Mac e Linux
+            </p>
           </div>
         </div>
       </div>
