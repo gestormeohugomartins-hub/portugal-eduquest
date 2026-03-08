@@ -3,15 +3,29 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Users, BookOpen, MessageCircle, Shield, Settings } from "lucide-react";
+import { LogOut, Users, BookOpen, MessageCircle, Shield, Settings, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import logo from "@/assets/logo.png";
+
+const schoolYears = [
+  { value: "1", label: "1º Ano" },
+  { value: "2", label: "2º Ano" },
+  { value: "3", label: "3º Ano" },
+  { value: "4", label: "4º Ano" },
+];
 
 const ParentDashboard = () => {
   const { user, profile, isParent, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [children, setChildren] = useState<any[]>([]);
   const [authorizedEmails, setAuthorizedEmails] = useState<any[]>([]);
+  const [newEmail, setNewEmail] = useState("");
+  const [newSchoolYear, setNewSchoolYear] = useState("1");
+  const [addingEmail, setAddingEmail] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
@@ -39,6 +53,50 @@ const ParentDashboard = () => {
       .select("*")
       .eq("parent_id", user!.id);
     setAuthorizedEmails(data || []);
+  };
+
+  const handleAddEmail = async () => {
+    if (!newEmail.includes("@")) {
+      toast.error("Email inválido");
+      return;
+    }
+
+    const totalEmails = authorizedEmails.length;
+    if (totalEmails >= 5) {
+      toast.error("Máximo de 5 educandos autorizados");
+      return;
+    }
+
+    setAddingEmail(true);
+    const { error } = await supabase.from("authorized_emails").insert({
+      parent_id: user!.id,
+      email: newEmail.toLowerCase().trim(),
+      school_year: newSchoolYear as any,
+    });
+
+    if (error) {
+      toast.error("Erro ao adicionar email: " + error.message);
+    } else {
+      toast.success("Email autorizado adicionado!");
+      setNewEmail("");
+      setNewSchoolYear("1");
+      loadAuthorizedEmails();
+    }
+    setAddingEmail(false);
+  };
+
+  const handleRemoveEmail = async (id: string, used: boolean) => {
+    if (used) {
+      toast.error("Não pode remover um email já registado");
+      return;
+    }
+    const { error } = await supabase.from("authorized_emails").delete().eq("id", id);
+    if (error) {
+      toast.error("Erro ao remover email");
+    } else {
+      toast.success("Email removido");
+      loadAuthorizedEmails();
+    }
   };
 
   if (loading) {
@@ -105,6 +163,9 @@ const ParentDashboard = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-body font-bold">{child.display_name}</h3>
+                        {child.nickname && (
+                          <p className="font-body text-xs text-primary">🎮 {child.nickname}</p>
+                        )}
                         <p className="font-body text-sm text-muted-foreground">
                           {child.school_year}º Ano • Nível {child.village_level}
                         </p>
@@ -122,18 +183,58 @@ const ParentDashboard = () => {
               {/* Authorized Emails */}
               <div className="mt-6">
                 <h3 className="font-display text-lg font-bold mb-3">Emails Autorizados</h3>
+                
                 {authorizedEmails.length === 0 ? (
                   <p className="font-body text-sm text-muted-foreground">Nenhum email autorizado.</p>
                 ) : (
                   <div className="space-y-2">
                     {authorizedEmails.map(ae => (
                       <div key={ae.id} className="flex items-center justify-between bg-card rounded-lg p-3 border border-border">
-                        <span className="font-body text-sm">{ae.email}</span>
-                        <span className={`text-xs font-body px-2 py-1 rounded ${ae.used ? "bg-secondary/20 text-secondary" : "bg-primary/20 text-primary"}`}>
-                          {ae.used ? "Registado" : "Pendente"}
-                        </span>
+                        <div>
+                          <span className="font-body text-sm">{ae.email}</span>
+                          <span className="font-body text-xs text-muted-foreground ml-2">({ae.school_year}º Ano)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-body px-2 py-1 rounded ${ae.used ? "bg-secondary/20 text-secondary" : "bg-primary/20 text-primary"}`}>
+                            {ae.used ? "Registado" : "Pendente"}
+                          </span>
+                          {!ae.used && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveEmail(ae.id, ae.used)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Add new authorized email */}
+                {authorizedEmails.length < 5 && (
+                  <div className="mt-4 p-4 border border-dashed border-border rounded-lg">
+                    <Label className="font-body font-semibold text-sm">Adicionar educando</Label>
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        type="email"
+                        placeholder="Email do educando"
+                        value={newEmail}
+                        onChange={e => setNewEmail(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Select value={newSchoolYear} onValueChange={setNewSchoolYear}>
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {schoolYears.map(y => (
+                            <SelectItem key={y.value} value={y.value}>{y.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={handleAddEmail} disabled={addingEmail} size="sm" className="shrink-0">
+                        <Plus className="w-4 h-4 mr-1" /> Adicionar
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -179,7 +280,6 @@ const ParentDashboard = () => {
                   <h3 className="font-body font-bold mb-2">Prioridade de Disciplinas</h3>
                   <p className="font-body text-sm text-muted-foreground">
                     Defina qual disciplina deve ter mais incidência nas perguntas dos seus educandos.
-                    Por exemplo, se tem mais dificuldade em Português, defina Português como prioridade 1.
                   </p>
                   <p className="font-body text-xs text-muted-foreground mt-2">
                     (As perguntas não ficam exclusivas — apenas com maior incidência)
