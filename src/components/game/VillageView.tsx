@@ -68,6 +68,14 @@ export const VillageView = ({ student, onQuiz, onRefresh, onPremium }: VillageVi
   const [animatedCitizens, setAnimatedCitizens] = useState<AnimatedCitizen[]>([]);
   const citizenAnimRef = useRef<number>(0);
 
+  // Natural resources
+  const { resources, gather, isOnCooldown, isGatherable } = useResources(student.id);
+
+  const handleTerrainClick = useCallback(async (element: TerrainElement) => {
+    if (!isGatherable(element.type)) return;
+    await gather(element);
+  }, [gather, isGatherable]);
+
   const baseGrid = createEmptyGrid(gridSize);
   const fullGrid = applyBuildingsToGrid(baseGrid, buildings);
   const stats = getTotalStats(buildings);
