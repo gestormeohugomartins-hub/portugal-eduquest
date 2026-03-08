@@ -9,7 +9,7 @@ import { createEmptyGrid, applyBuildingsToGrid, canPlace, hasRoadAccess, getUpgr
 import { SFX } from '@/lib/sounds';
 import { AmbientMusic } from '@/lib/ambientMusic';
 import { toast } from 'sonner';
-import { BookOpen, Shield, Users, Sparkles, Music, MusicOff, Maximize } from 'lucide-react';
+import { BookOpen, Shield, Users, Sparkles, Music, Volume2, Maximize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface VillageViewProps {
