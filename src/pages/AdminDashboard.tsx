@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,10 +69,29 @@ const AdminDashboard = () => {
   // Stats
   const [stats, setStats] = useState({ totalStudents: 0, totalParents: 0, totalAssociations: 0, totalAdmins: 0 });
 
+  const initialCheckDone = useRef(false);
+
   useEffect(() => {
-    checkSession();
+    let mounted = true;
+
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!mounted) return;
+      if (session?.user) {
+        setCurrentUser(session.user);
+        setIsLoggedIn(true);
+        await verifyAdmin(session.user);
+      } else {
+        setLoading(false);
+      }
+      initialCheckDone.current = true;
+    };
+
+    init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      if (!initialCheckDone.current) return;
       if (session?.user) {
         setCurrentUser(session.user);
         setIsLoggedIn(true);
@@ -85,19 +104,11 @@ const AdminDashboard = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
-
-  const checkSession = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      setCurrentUser(session.user);
-      setIsLoggedIn(true);
-      await verifyAdmin(session.user);
-    } else {
-      setLoading(false);
-    }
-  };
 
   const verifyAdmin = async (u: any) => {
     try {
