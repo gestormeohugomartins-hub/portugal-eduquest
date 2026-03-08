@@ -156,7 +156,7 @@ const AdminDashboard = () => {
     if (data?.users) {
       setAllUsers(data.users);
       const students = data.users.filter((u: AdminUser) => u.app_role === "student");
-      const parents = data.users.filter((u: AdminUser) => u.app_role === "parent");
+      const parents = data.users.filter((u: AdminUser) => u.app_role === "parent" && !u.admin_role);
       const admins = data.users.filter((u: AdminUser) => u.admin_role);
       setStats(prev => ({
         ...prev,
