@@ -3,35 +3,138 @@ import { supabase } from '@/integrations/supabase/client';
 import { ZoomIn, ZoomOut, RotateCcw, Users, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-interface DistrictInfo {
-  x: number;
-  y: number;
-  label: string;
-  // SVG polygon points for district shape (simplified)
-  path: string;
-}
+// Realistic district SVG paths (geographically accurate, simplified)
+// Layout: Islands (Azores/Madeira) on the LEFT, mainland on the RIGHT
+// ViewBox: 0 0 600 500
+const districtPaths: Record<string, { path: string; labelX: number; labelY: number; label: string }> = {
+  // === ISLANDS (LEFT SIDE) ===
+  acores: {
+    label: "Açores",
+    labelX: 75, labelY: 105,
+    // Archipelago shape - multiple small islands
+    path: "M30,60 L45,55 L55,58 L60,65 L55,72 L40,75 L30,70Z M70,70 L85,65 L95,68 L100,75 L95,82 L80,85 L70,80Z M105,55 L120,50 L130,53 L135,60 L130,67 L115,70 L105,65Z M50,90 L65,85 L75,88 L80,95 L75,102 L60,105 L50,100Z M90,95 L105,90 L115,93 L120,100 L115,107 L100,110 L90,105Z",
+  },
+  madeira: {
+    label: "Madeira",
+    labelX: 75, labelY: 260,
+    // Madeira + Porto Santo
+    path: "M40,235 L55,228 L90,230 L110,238 L108,250 L90,258 L55,260 L40,252Z M65,270 L80,265 L95,268 L100,275 L95,282 L80,285 L65,280Z",
+  },
+  // === MAINLAND (RIGHT SIDE) ===
+  viana_castelo: {
+    label: "V. Castelo",
+    labelX: 255, labelY: 60,
+    path: "M230,30 L265,25 L280,35 L285,55 L275,70 L260,75 L240,68 L235,55 L230,42Z",
+  },
+  braga: {
+    label: "Braga",
+    labelX: 305, labelY: 55,
+    path: "M280,35 L310,28 L330,35 L335,50 L328,65 L310,72 L290,68 L275,70 L285,55Z",
+  },
+  vila_real: {
+    label: "Vila Real",
+    labelX: 355, labelY: 55,
+    path: "M330,35 L365,25 L390,30 L395,50 L385,65 L365,72 L345,68 L328,65 L335,50Z",
+  },
+  braganca: {
+    label: "Bragança",
+    labelX: 440, labelY: 45,
+    path: "M390,30 L420,20 L465,18 L480,25 L485,45 L475,62 L450,68 L420,65 L395,50Z",
+  },
+  porto: {
+    label: "Porto",
+    labelX: 265, labelY: 100,
+    path: "M235,75 L260,75 L290,68 L310,72 L305,90 L295,105 L275,110 L250,105 L238,95 L230,85Z",
+  },
+  aveiro: {
+    label: "Aveiro",
+    labelX: 255, labelY: 140,
+    path: "M225,100 L250,105 L275,110 L280,130 L270,150 L250,155 L230,148 L220,130Z",
+  },
+  viseu: {
+    label: "Viseu",
+    labelX: 330, labelY: 110,
+    path: "M295,75 L328,65 L365,72 L380,85 L375,105 L360,118 L335,125 L310,120 L295,110 L295,90Z",
+  },
+  guarda: {
+    label: "Guarda",
+    labelX: 415, labelY: 110,
+    path: "M365,72 L420,65 L475,62 L478,85 L470,108 L445,120 L415,125 L390,118 L375,105 L380,85Z",
+  },
+  coimbra: {
+    label: "Coimbra",
+    labelX: 285, labelY: 175,
+    path: "M240,155 L270,150 L310,120 L335,125 L330,150 L315,170 L290,180 L265,185 L245,175Z",
+  },
+  castelo_branco: {
+    label: "C. Branco",
+    labelX: 395, labelY: 165,
+    path: "M315,130 L360,118 L415,125 L445,120 L460,140 L455,170 L430,185 L395,190 L360,185 L330,175 L315,160Z",
+  },
+  leiria: {
+    label: "Leiria",
+    labelX: 255, labelY: 215,
+    path: "M225,190 L245,175 L265,185 L290,180 L300,200 L290,220 L270,230 L245,228 L228,215Z",
+  },
+  santarem: {
+    label: "Santarém",
+    labelX: 325, labelY: 225,
+    path: "M280,195 L315,170 L345,180 L370,190 L380,210 L370,235 L345,245 L315,248 L290,240 L275,225Z",
+  },
+  portalegre: {
+    label: "Portalegre",
+    labelX: 430, labelY: 215,
+    path: "M370,190 L410,185 L455,170 L470,185 L475,210 L460,230 L435,240 L405,238 L380,230 L370,210Z",
+  },
+  lisboa: {
+    label: "Lisboa",
+    labelX: 250, labelY: 270,
+    path: "M220,245 L245,228 L275,235 L290,250 L285,270 L270,285 L248,290 L230,282 L218,265Z",
+  },
+  setubal: {
+    label: "Setúbal",
+    labelX: 280, labelY: 310,
+    path: "M248,290 L270,285 L300,290 L320,300 L325,320 L310,340 L285,345 L260,338 L245,320 L240,300Z",
+  },
+  evora: {
+    label: "Évora",
+    labelX: 355, labelY: 290,
+    path: "M300,255 L345,245 L405,238 L420,255 L415,280 L400,300 L370,310 L340,308 L315,300 L295,285Z",
+  },
+  beja: {
+    label: "Beja",
+    labelX: 350, labelY: 370,
+    path: "M285,340 L315,330 L370,310 L400,300 L420,320 L430,350 L420,380 L395,400 L355,410 L315,405 L290,390 L275,365Z",
+  },
+  faro: {
+    label: "Faro",
+    labelX: 360, labelY: 440,
+    path: "M290,410 L330,405 L395,400 L430,410 L450,425 L445,445 L425,460 L380,470 L330,468 L290,458 L275,440 L278,420Z",
+  },
+};
 
-const districtPositions: Record<string, DistrictInfo> = {
-  viana_castelo: { x: 15, y: 8, label: "Viana do Castelo", path: "M8,2 L22,2 L24,10 L18,14 L8,12Z" },
-  braga: { x: 25, y: 12, label: "Braga", path: "M22,2 L34,4 L36,14 L24,16 L18,14 L24,10Z" },
-  vila_real: { x: 35, y: 10, label: "Vila Real", path: "M34,4 L46,2 L48,14 L38,18 L36,14Z" },
-  braganca: { x: 52, y: 8, label: "Bragança", path: "M46,2 L62,2 L60,14 L48,14Z" },
-  porto: { x: 18, y: 22, label: "Porto", path: "M8,12 L18,14 L24,16 L22,26 L10,28 L6,22Z" },
-  aveiro: { x: 14, y: 32, label: "Aveiro", path: "M6,22 L10,28 L22,26 L20,38 L8,40 L4,32Z" },
-  viseu: { x: 34, y: 26, label: "Viseu", path: "M24,16 L36,14 L38,18 L42,28 L30,34 L22,30 L22,26Z" },
-  guarda: { x: 50, y: 26, label: "Guarda", path: "M38,18 L48,14 L60,14 L58,30 L50,34 L42,28Z" },
-  coimbra: { x: 22, y: 40, label: "Coimbra", path: "M8,40 L20,38 L22,30 L30,34 L28,44 L14,46Z" },
-  castelo_branco: { x: 46, y: 40, label: "C. Branco", path: "M30,34 L42,28 L50,34 L58,30 L56,44 L38,48 L28,44Z" },
-  leiria: { x: 16, y: 50, label: "Leiria", path: "M4,46 L14,46 L28,44 L26,54 L12,56Z" },
-  santarem: { x: 30, y: 54, label: "Santarém", path: "M26,54 L28,44 L38,48 L44,52 L36,60 L22,58Z" },
-  portalegre: { x: 50, y: 50, label: "Portalegre", path: "M38,48 L56,44 L58,54 L48,58 L44,52Z" },
-  lisboa: { x: 16, y: 64, label: "Lisboa", path: "M8,58 L22,58 L24,66 L14,70 L6,66Z" },
-  setubal: { x: 22, y: 72, label: "Setúbal", path: "M14,70 L24,66 L32,68 L30,78 L18,76Z" },
-  evora: { x: 38, y: 66, label: "Évora", path: "M24,66 L36,60 L48,58 L46,70 L38,74 L32,68Z" },
-  beja: { x: 36, y: 80, label: "Beja", path: "M18,76 L30,78 L38,74 L46,70 L48,82 L28,88Z" },
-  faro: { x: 32, y: 90, label: "Faro", path: "M18,86 L28,88 L48,82 L46,94 L16,94Z" },
-  acores: { x: 78, y: 22, label: "Açores", path: "M72,16 L84,16 L86,28 L72,28Z" },
-  madeira: { x: 78, y: 52, label: "Madeira", path: "M72,46 L86,46 L86,58 L72,58Z" },
+// Mapping from our district keys to display
+const districtKeyToId: Record<string, string> = {
+  viana_castelo: "viana_castelo",
+  braga: "braga",
+  vila_real: "vila_real",
+  braganca: "braganca",
+  porto: "porto",
+  aveiro: "aveiro",
+  viseu: "viseu",
+  guarda: "guarda",
+  coimbra: "coimbra",
+  castelo_branco: "castelo_branco",
+  leiria: "leiria",
+  santarem: "santarem",
+  portalegre: "portalegre",
+  lisboa: "lisboa",
+  setubal: "setubal",
+  evora: "evora",
+  beja: "beja",
+  faro: "faro",
+  acores: "acores",
+  madeira: "madeira",
 };
 
 interface PlayerInDistrict {
@@ -56,7 +159,9 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch player counts per district
+  // Touch support
+  const [lastTouchDist, setLastTouchDist] = useState<number | null>(null);
+
   useEffect(() => {
     const fetchPlayers = async () => {
       const { data } = await supabase
@@ -78,7 +183,6 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
             xp: player.xp,
           });
         }
-        // Sort players by xp desc within each district
         for (const d of Object.values(grouped)) {
           d.players.sort((a, b) => b.xp - a.xp);
         }
@@ -89,13 +193,13 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
     fetchPlayers();
   }, []);
 
-  const totalPlayers = useMemo(() => 
+  const totalPlayers = useMemo(() =>
     Object.values(districtData).reduce((sum, d) => sum + d.count, 0),
     [districtData]
   );
 
   const handleZoomIn = () => setZoom(z => Math.min(4, z * 1.4));
-  const handleZoomOut = () => setZoom(z => Math.max(0.8, z / 1.4));
+  const handleZoomOut = () => setZoom(z => Math.max(0.5, z / 1.4));
   const handleReset = () => { setZoom(1); setPan({ x: 0, y: 0 }); setSelectedDistrict(null); };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -111,26 +215,60 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
     });
   };
   const handleMouseUp = () => setDragging(false);
-  const handleWheel = (e: React.WheelEvent) => {
+
+  const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
-    setZoom(z => Math.max(0.8, Math.min(4, z - e.deltaY * 0.002)));
+    setZoom(z => Math.max(0.5, Math.min(4, z - e.deltaY * 0.002)));
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [handleWheel]);
+
+  // Touch handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      setDragging(true);
+      setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+      setPanStart({ ...pan });
+    } else if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      setLastTouchDist(Math.sqrt(dx * dx + dy * dy));
+    }
   };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && dragging) {
+      setPan({
+        x: panStart.x + (e.touches[0].clientX - dragStart.x) / zoom,
+        y: panStart.y + (e.touches[0].clientY - dragStart.y) / zoom,
+      });
+    } else if (e.touches.length === 2 && lastTouchDist !== null) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const scale = dist / lastTouchDist;
+      setZoom(z => Math.max(0.5, Math.min(4, z * scale)));
+      setLastTouchDist(dist);
+    }
+  };
+  const handleTouchEnd = () => { setDragging(false); setLastTouchDist(null); };
 
   const handleDistrictClick = (key: string) => {
     if (selectedDistrict === key) {
-      // Zoom into district
-      const pos = districtPositions[key];
-      setZoom(3);
-      setPan({ x: -(pos.x - 50) * 4, y: -(pos.y - 50) * 4 });
+      const info = districtPaths[key];
+      setZoom(2.5);
+      setPan({ x: -(info.labelX - 300), y: -(info.labelY - 250) });
     } else {
       setSelectedDistrict(key);
     }
   };
 
-  // Size of player dots based on zoom
-  const dotSize = Math.max(2, 4 / zoom);
   const showPlayerNames = zoom >= 2.5;
-  const showPlayerCount = zoom >= 1.5;
+  const showPlayerCount = zoom >= 1.2;
 
   return (
     <div className="px-2 h-[calc(100vh-10rem)] flex flex-col">
@@ -158,120 +296,145 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
       {/* Map Container */}
       <div
         ref={containerRef}
-        className="flex-1 relative overflow-hidden rounded-xl border-2 border-border bg-[#1a3a2a] cursor-grab active:cursor-grabbing touch-none select-none"
+        className="flex-1 relative overflow-hidden rounded-xl border-2 border-border cursor-grab active:cursor-grabbing touch-none select-none"
+        style={{ background: 'linear-gradient(180deg, hsl(210 50% 25%) 0%, hsl(210 60% 20%) 100%)' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={() => setDragging(false)}
-        onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
-        {/* SVG Map */}
         <svg
-          viewBox="0 0 100 100"
+          viewBox="0 0 600 500"
           className="w-full h-full"
           style={{
             transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
             transformOrigin: 'center center',
           }}
         >
-          {/* Sea background */}
-          <rect x="0" y="0" width="100" height="100" fill="#1a3a5a" />
+          {/* Ocean background */}
+          <defs>
+            <linearGradient id="oceanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="hsl(210, 50%, 28%)" />
+              <stop offset="100%" stopColor="hsl(210, 60%, 18%)" />
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <rect x="0" y="0" width="600" height="500" fill="url(#oceanGrad)" />
 
-          {/* Mainland rough outline */}
-          <path
-            d="M6,2 L62,2 L60,14 L58,30 L56,44 L58,54 L48,58 L46,70 L48,82 L46,94 L16,94 L18,86 L6,66 L4,46 L4,32 L6,22Z"
-            fill="#2a5a3a"
-            stroke="#3a7a4a"
-            strokeWidth="0.5"
-          />
+          {/* Subtle ocean wave lines */}
+          {[80, 160, 320, 400].map((y, i) => (
+            <path
+              key={i}
+              d={`M0,${y} Q150,${y + (i % 2 ? 8 : -8)} 300,${y} Q450,${y + (i % 2 ? -8 : 8)} 600,${y}`}
+              fill="none"
+              stroke="hsl(210, 40%, 30%)"
+              strokeWidth="0.5"
+              opacity="0.4"
+            />
+          ))}
 
-          {/* Island backgrounds */}
-          <rect x="70" y="14" width="18" height="16" rx="2" fill="#2a5a3a" stroke="#3a7a4a" strokeWidth="0.3" />
-          <rect x="70" y="44" width="18" height="16" rx="2" fill="#2a5a3a" stroke="#3a7a4a" strokeWidth="0.3" />
+          {/* Separator line between islands and mainland */}
+          <line x1="160" y1="15" x2="160" y2="485" stroke="hsl(210, 30%, 35%)" strokeWidth="0.8" strokeDasharray="6,4" opacity="0.5" />
+          <text x="165" y="250" fill="hsl(210, 30%, 50%)" fontSize="10" fontStyle="italic" opacity="0.6"
+            transform="rotate(90, 165, 250)">Oceano Atlântico</text>
+
+          {/* Island labels */}
+          <text x="75" y="38" textAnchor="middle" fill="hsl(45, 60%, 70%)" fontSize="11" fontWeight="bold" opacity="0.8">
+            Açores
+          </text>
+          <text x="75" y="218" textAnchor="middle" fill="hsl(45, 60%, 70%)" fontSize="11" fontWeight="bold" opacity="0.8">
+            Madeira
+          </text>
 
           {/* District regions */}
-          {Object.entries(districtPositions).map(([key, info]) => {
+          {Object.entries(districtPaths).map(([key, info]) => {
             const isSelected = selectedDistrict === key;
             const isMine = myDistrict === key;
             const playerData = districtData[key];
             const count = playerData?.count || 0;
-
-            // Color intensity based on player count
             const intensity = Math.min(1, count / 10);
+
             const fillColor = isSelected
-              ? 'hsl(140, 60%, 35%)'
+              ? 'hsl(140, 50%, 40%)'
               : isMine
-                ? 'hsl(45, 80%, 45%)'
+                ? 'hsl(45, 70%, 45%)'
                 : count > 0
-                  ? `hsl(140, ${30 + intensity * 40}%, ${25 + intensity * 20}%)`
-                  : 'hsl(140, 15%, 22%)';
+                  ? `hsl(140, ${25 + intensity * 35}%, ${28 + intensity * 15}%)`
+                  : 'hsl(140, 15%, 25%)';
+
+            const strokeColor = isSelected
+              ? 'hsl(45, 90%, 60%)'
+              : isMine
+                ? 'hsl(45, 80%, 55%)'
+                : 'hsl(140, 25%, 40%)';
 
             return (
               <g key={key} onClick={() => handleDistrictClick(key)} className="cursor-pointer">
                 <path
                   d={info.path}
                   fill={fillColor}
-                  stroke={isSelected ? 'hsl(45, 90%, 60%)' : isMine ? 'hsl(45, 80%, 55%)' : '#4a8a5a'}
-                  strokeWidth={isSelected ? '0.8' : '0.3'}
-                  opacity={isSelected ? 1 : 0.9}
+                  stroke={strokeColor}
+                  strokeWidth={isSelected ? 2 : 0.8}
+                  opacity={isSelected ? 1 : 0.92}
+                  style={{ transition: 'fill 0.2s, stroke-width 0.2s' }}
                 />
 
-                {/* District dot */}
-                <circle
-                  cx={info.x}
-                  cy={info.y}
-                  r={isMine ? 2 : count > 0 ? 1.5 : 1}
-                  fill={isMine ? 'hsl(45, 90%, 55%)' : count > 0 ? 'hsl(140, 70%, 55%)' : '#5a8a6a'}
-                  stroke="#fff"
-                  strokeWidth="0.3"
-                />
-
-                {/* Player count badge */}
-                {count > 0 && (showPlayerCount || isSelected) && (
-                  <>
-                    <rect
-                      x={info.x + 2}
-                      y={info.y - 3}
-                      width={count >= 10 ? 8 : 6}
-                      height={5}
-                      rx={1}
-                      fill="hsl(45, 80%, 50%)"
-                      stroke="#fff"
-                      strokeWidth="0.2"
-                    />
-                    <text
-                      x={info.x + (count >= 10 ? 6 : 5)}
-                      y={info.y + 0.5}
-                      textAnchor="middle"
-                      fill="#fff"
-                      fontSize="3"
-                      fontWeight="bold"
-                    >
-                      {count}
-                    </text>
-                  </>
-                )}
-
-                {/* District label (visible at higher zoom) */}
-                {(zoom >= 1.8 || isSelected) && (
+                {/* District label */}
+                {(zoom >= 1.2 || isSelected || isMine) && (
                   <text
-                    x={info.x}
-                    y={info.y + 4.5}
+                    x={info.labelX}
+                    y={info.labelY}
                     textAnchor="middle"
-                    fill="#c0e0c0"
-                    fontSize={isSelected ? '3' : '2.2'}
-                    fontWeight={isSelected ? 'bold' : 'normal'}
+                    fill={isSelected ? 'hsl(45, 90%, 80%)' : isMine ? 'hsl(45, 80%, 75%)' : 'hsl(140, 20%, 75%)'}
+                    fontSize={isSelected ? 11 : 9}
+                    fontWeight={isSelected || isMine ? 'bold' : 'normal'}
+                    style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)', pointerEvents: 'none' }}
                   >
                     {info.label}
                   </text>
                 )}
 
-                {/* Individual player dots at high zoom */}
+                {/* Player count badge */}
+                {count > 0 && (showPlayerCount || isSelected) && (
+                  <g>
+                    <rect
+                      x={info.labelX + 18}
+                      y={info.labelY - 15}
+                      width={count >= 100 ? 30 : count >= 10 ? 24 : 18}
+                      height={16}
+                      rx={4}
+                      fill="hsl(45, 80%, 50%)"
+                      stroke="hsl(45, 60%, 30%)"
+                      strokeWidth="0.5"
+                    />
+                    <text
+                      x={info.labelX + 18 + (count >= 100 ? 15 : count >= 10 ? 12 : 9)}
+                      y={info.labelY - 4}
+                      textAnchor="middle"
+                      fill="hsl(45, 10%, 10%)"
+                      fontSize="9"
+                      fontWeight="bold"
+                    >
+                      {count}
+                    </text>
+                  </g>
+                )}
+
+                {/* Player dots at high zoom */}
                 {showPlayerNames && playerData?.players.slice(0, 20).map((player, i) => {
                   const angle = (i / Math.max(1, playerData.players.length)) * Math.PI * 2;
-                  const radius = 3 + (i % 3) * 1.5;
-                  const px = info.x + Math.cos(angle) * radius;
-                  const py = info.y + Math.sin(angle) * radius;
+                  const radius = 15 + (i % 3) * 8;
+                  const px = info.labelX + Math.cos(angle) * radius;
+                  const py = info.labelY + Math.sin(angle) * radius;
                   const isMe = player.id === studentId;
 
                   return (
@@ -279,18 +442,19 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
                       <circle
                         cx={px}
                         cy={py}
-                        r={isMe ? 1.2 : 0.8}
+                        r={isMe ? 4 : 3}
                         fill={isMe ? 'hsl(45, 90%, 55%)' : 'hsl(200, 70%, 60%)'}
                         stroke="#fff"
-                        strokeWidth="0.15"
+                        strokeWidth="0.5"
                       />
-                      {zoom >= 3.5 && (
+                      {zoom >= 3 && (
                         <text
                           x={px}
-                          y={py + 2}
+                          y={py + 8}
                           textAnchor="middle"
                           fill="#e0e0e0"
-                          fontSize="1.5"
+                          fontSize="5"
+                          style={{ textShadow: '1px 1px 1px rgba(0,0,0,0.9)' }}
                         >
                           {player.nickname || player.display_name.split(' ')[0]}
                         </text>
@@ -301,20 +465,30 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
               </g>
             );
           })}
-
-          {/* Separator line for islands */}
-          <line x1="68" y1="14" x2="68" y2="60" stroke="#4a8a6a" strokeWidth="0.3" strokeDasharray="1,1" />
-          <text x="69" y="36" fill="#6aaa8a" fontSize="2" transform="rotate(90, 69, 36)">Ilhas</text>
         </svg>
 
-        {/* Zoom level indicator */}
+        {/* Zoom indicator */}
         <div className="absolute bottom-2 left-2 bg-card/80 backdrop-blur-sm rounded px-2 py-1 text-xs font-body text-muted-foreground border border-border">
           Zoom: {zoom.toFixed(1)}x
         </div>
-
-        {/* Hint */}
         <div className="absolute bottom-2 right-2 bg-card/80 backdrop-blur-sm rounded px-2 py-1 text-[10px] font-body text-muted-foreground border border-border">
-          Clica num distrito • Clica 2x para zoom
+          Clica num distrito • 2x para zoom
+        </div>
+
+        {/* Legend */}
+        <div className="absolute top-2 left-2 bg-card/80 backdrop-blur-sm rounded px-2 py-1.5 text-[10px] font-body text-muted-foreground border border-border space-y-0.5">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-sm" style={{ background: 'hsl(45, 70%, 45%)' }} />
+            <span>O teu distrito</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-sm" style={{ background: 'hsl(140, 50%, 40%)' }} />
+            <span>Com jogadores</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-sm" style={{ background: 'hsl(140, 15%, 25%)' }} />
+            <span>Sem jogadores</span>
+          </div>
         </div>
       </div>
 
@@ -324,7 +498,7 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-display text-sm font-bold flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-primary" />
-              {districtPositions[selectedDistrict]?.label}
+              {districtPaths[selectedDistrict]?.label}
               {myDistrict === selectedDistrict && (
                 <span className="text-xs bg-gold/20 text-gold px-1.5 py-0.5 rounded font-body">O teu distrito!</span>
               )}
