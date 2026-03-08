@@ -7,6 +7,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const PRICE_IDS = {
+  monthly: "price_1T8ov5RwhbKQXE0J8GCqt40W",
+  annual: "price_1T8ovyRwhbKQXE0JlTXYTU7D",
+};
+
+const PLAN_AMOUNTS = {
+  monthly: 1.99,
+  annual: 21.49,
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -24,7 +34,10 @@ serve(async (req) => {
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated");
 
-    const { studentId, associationCode, promoCode } = await req.json();
+    const { studentId, associationCode, promoCode, plan } = await req.json();
+
+    const selectedPlan = plan === "annual" ? "annual" : "monthly";
+    const priceId = PRICE_IDS[selectedPlan];
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
@@ -36,7 +49,10 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    const metadata: Record<string, string> = { student_id: studentId };
+    const metadata: Record<string, string> = {
+      student_id: studentId,
+      plan: selectedPlan,
+    };
     if (associationCode) {
       metadata.association_code = associationCode;
     }
@@ -70,7 +86,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: "price_1T8gBJRwhbKQXE0Jo3VJxe8t",
+          price: priceId,
           quantity: 1,
         },
       ],
