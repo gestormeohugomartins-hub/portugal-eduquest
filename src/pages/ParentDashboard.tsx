@@ -330,12 +330,36 @@ const ParentDashboard = () => {
                 </div>
                 <div className="parchment-bg rounded-lg p-4">
                   <h3 className="font-body font-bold mb-2">Informações da Conta</h3>
-                  <p className="font-body text-sm text-muted-foreground">
+                  <p className="font-body text-sm text-muted-foreground mb-3">
                     Email: {profile?.email}
                   </p>
-                  <p className="font-body text-sm text-muted-foreground">
-                    Distrito: {profile?.district || "Não definido"}
-                  </p>
+                  <div>
+                    <Label className="font-body font-semibold text-sm flex items-center gap-1">
+                      <MapPin className="w-4 h-4" /> Distrito
+                    </Label>
+                    <div className="flex gap-2 mt-1">
+                      <Select value={editDistrict} onValueChange={setEditDistrict}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Selecione o distrito" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {districts.map(d => (
+                            <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        onClick={handleSaveDistrict} 
+                        disabled={savingDistrict || editDistrict === (profile?.district || "")} 
+                        size="sm"
+                      >
+                        <Save className="w-4 h-4 mr-1" /> Guardar
+                      </Button>
+                    </div>
+                    <p className="font-body text-xs text-muted-foreground mt-1">
+                      O distrito determina a localização no mapa e os monumentos do jogo.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
