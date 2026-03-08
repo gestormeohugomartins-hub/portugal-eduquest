@@ -18,6 +18,22 @@ const schoolYears = [
   { value: "4", label: "4º Ano" },
 ];
 
+const districts = [
+  { value: "aveiro", label: "Aveiro" }, { value: "beja", label: "Beja" },
+  { value: "braga", label: "Braga" }, { value: "braganca", label: "Bragança" },
+  { value: "castelo_branco", label: "Castelo Branco" }, { value: "coimbra", label: "Coimbra" },
+  { value: "evora", label: "Évora" }, { value: "faro", label: "Faro" },
+  { value: "guarda", label: "Guarda" }, { value: "leiria", label: "Leiria" },
+  { value: "lisboa", label: "Lisboa" }, { value: "portalegre", label: "Portalegre" },
+  { value: "porto", label: "Porto" }, { value: "santarem", label: "Santarém" },
+  { value: "setubal", label: "Setúbal" }, { value: "viana_castelo", label: "Viana do Castelo" },
+  { value: "vila_real", label: "Vila Real" }, { value: "viseu", label: "Viseu" },
+  { value: "acores", label: "Açores" }, { value: "madeira", label: "Madeira" },
+];
+
+const districtLabels: Record<string, string> = {};
+districts.forEach(d => { districtLabels[d.value] = d.label; });
+
 const ParentDashboard = () => {
   const { user, profile, isParent, loading, signOut } = useAuth();
   const navigate = useNavigate();
