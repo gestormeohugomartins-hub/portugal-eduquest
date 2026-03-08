@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BUILDING_DEFS, PlacedBuilding } from '@/lib/gameTypes';
 import { getUpgradeCost } from '@/lib/gridLogic';
-import { Coins, Diamond, ArrowUp, Trash2, Info } from 'lucide-react';
+import { Coins, Diamond, ArrowUp, Trash2, BookOpen } from 'lucide-react';
+import { MonumentInfoModal } from './MonumentInfoModal';
 
 interface BuildingInfoModalProps {
   building: PlacedBuilding | null;
