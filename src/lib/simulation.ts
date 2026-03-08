@@ -1,15 +1,40 @@
-// Village simulation: food, services, happiness, population dynamics
+// Village simulation: food, services, happiness, population dynamics, seasons
 import { PlacedBuilding, BUILDING_DEFS } from './gameTypes';
 
 // ====== Simulation constants ======
-export const FOOD_PER_CITIZEN_PER_MIN = 0.2; // each citizen eats 0.2 food/min
-export const SIM_TICK_MS = 15000; // every 15 seconds
+export const FOOD_PER_CITIZEN_PER_MIN = 0.2;
+export const SIM_TICK_MS = 15000;
+
+// ====== Seasons ======
+export type Season = 'primavera' | 'verao' | 'outono' | 'inverno';
+
+export const SEASON_CONFIG: Record<Season, { label: string; emoji: string; foodMultiplier: number; color: string }> = {
+  primavera: { label: 'Primavera', emoji: '🌸', foodMultiplier: 1.2, color: '#4ade80' },
+  verao:     { label: 'Verão',     emoji: '☀️', foodMultiplier: 1.5, color: '#facc15' },
+  outono:    { label: 'Outono',    emoji: '🍂', foodMultiplier: 0.8, color: '#f97316' },
+  inverno:   { label: 'Inverno',   emoji: '❄️', foodMultiplier: 0.4, color: '#93c5fd' },
+};
+
+const SEASON_ORDER: Season[] = ['primavera', 'verao', 'outono', 'inverno'];
+// Each season lasts 5 real minutes (300s)
+const SEASON_DURATION_MS = 300000;
+
+export function getCurrentSeason(): Season {
+  const cyclePos = Date.now() % (SEASON_DURATION_MS * 4);
+  const idx = Math.floor(cyclePos / SEASON_DURATION_MS);
+  return SEASON_ORDER[idx];
+}
+
+export function getSeasonProgress(): number {
+  const cyclePos = Date.now() % SEASON_DURATION_MS;
+  return cyclePos / SEASON_DURATION_MS;
+}
 
 // ====== Building production/service rates ======
 export interface SimRates {
-  foodProduction: number;   // food/min per level
-  coinProduction: number;   // coins/min per level
-  serviceCapacity: number;  // citizens served per level
+  foodProduction: number;
+  coinProduction: number;
+  serviceCapacity: number;
   serviceType?: 'health' | 'education' | 'religion' | 'water';
 }
 
@@ -30,14 +55,16 @@ export interface SimState {
   foodCapacity: number;
   foodPerMin: number;
   foodConsumedPerMin: number;
-  happiness: number;        // 0-100
-  healthCoverage: number;   // 0-100%
+  happiness: number;
+  healthCoverage: number;
   educationCoverage: number;
   waterCoverage: number;
   religionCoverage: number;
   complaints: Complaint[];
-  populationDelta: number;  // citizens entering/leaving per tick
-  diseaseRisk: number;      // 0-100%
+  populationDelta: number;
+  diseaseRisk: number;
+  season: Season;
+  seasonMultiplier: number;
 }
 
 export interface Complaint {
@@ -55,8 +82,10 @@ const COMPLAINT_MESSAGES: Record<string, { messages: string[]; emoji: string }> 
   disease:   { messages: ['Há doença na aldeia!', 'Epidemia!', 'Estamos doentes!'], emoji: '🤒' },
 };
 
-// ====== Calculate simulation state from buildings ======
 export function calculateSimState(buildings: PlacedBuilding[], citizenCount: number): SimState {
+  const season = getCurrentSeason();
+  const seasonMult = SEASON_CONFIG[season].foodMultiplier;
+
   let foodPerMin = 0;
   let healthCap = 0;
   let eduCap = 0;
@@ -67,7 +96,8 @@ export function calculateSimState(buildings: PlacedBuilding[], citizenCount: num
     const rates = SIM_RATES[b.defId];
     if (!rates) continue;
     const lvl = b.level;
-    foodPerMin += rates.foodProduction * lvl;
+    // Apply season multiplier to food production
+    foodPerMin += rates.foodProduction * lvl * (rates.foodProduction > 0 ? seasonMult : 1);
     if (rates.serviceType === 'health') healthCap += rates.serviceCapacity * lvl;
     if (rates.serviceType === 'education') eduCap += rates.serviceCapacity * lvl;
     if (rates.serviceType === 'water') waterCap += rates.serviceCapacity * lvl;
@@ -81,28 +111,23 @@ export function calculateSimState(buildings: PlacedBuilding[], citizenCount: num
   const waterCoverage = Math.min(100, (waterCap / pop) * 100);
   const religionCoverage = Math.min(100, (religionCap / pop) * 100);
 
-  // Food balance
   const foodBalance = foodPerMin - foodConsumedPerMin;
-  const foodStored = Math.max(0, foodBalance * 5); // 5min buffer estimate
+  const foodStored = Math.max(0, foodBalance * 5);
   const foodCapacity = Math.max(50, buildings.filter(b => b.defId === 'market' || b.defId === 'windmill').length * 50);
 
-  // Disease risk increases without health + water
   const diseaseRisk = Math.max(0, 100 - (healthCoverage * 0.6 + waterCoverage * 0.4));
 
-  // Happiness formula
   const foodHappy = foodBalance >= 0 ? 30 : Math.max(0, 30 + foodBalance * 3);
   const serviceHappy = (healthCoverage * 0.2 + educationCoverage * 0.15 + waterCoverage * 0.2 + religionCoverage * 0.15);
   const diseaseHappy = -diseaseRisk * 0.2;
   const happiness = Math.min(100, Math.max(0, foodHappy + serviceHappy + diseaseHappy));
 
-  // Population change
   let populationDelta = 0;
   if (happiness >= 70) populationDelta = 1;
   else if (happiness >= 40) populationDelta = 0;
   else if (happiness < 20) populationDelta = -2;
   else populationDelta = -1;
 
-  // Generate complaints
   const complaints: Complaint[] = [];
   if (foodBalance < 0) addComplaint(complaints, 'food');
   if (healthCoverage < 50 && citizenCount > 5) addComplaint(complaints, 'health');
@@ -124,6 +149,8 @@ export function calculateSimState(buildings: PlacedBuilding[], citizenCount: num
     complaints,
     populationDelta,
     diseaseRisk: Math.round(diseaseRisk),
+    season,
+    seasonMultiplier: seasonMult,
   };
 }
 
@@ -148,7 +175,7 @@ export interface AnimatedCitizen {
   color: string;
   complaint?: string;
   complaintTimer: number;
-  direction: number; // 0-3 for facing
+  direction: number;
 }
 
 let citizenIdCounter = 0;
@@ -175,7 +202,6 @@ export function updateCitizen(c: AnimatedCitizen, roadTiles: { x: number; y: num
   const dist = Math.sqrt(dx * dx + dy * dy);
 
   if (dist < 0.1) {
-    // Pick new target
     if (roadTiles.length > 0) {
       const t = roadTiles[Math.floor(Math.random() * roadTiles.length)];
       c.targetX = t.x;
@@ -184,7 +210,6 @@ export function updateCitizen(c: AnimatedCitizen, roadTiles: { x: number; y: num
   } else {
     c.x += (dx / dist) * c.speed;
     c.y += (dy / dist) * c.speed;
-    // Direction based on movement
     if (Math.abs(dx) > Math.abs(dy)) {
       c.direction = dx > 0 ? 1 : 3;
     } else {
