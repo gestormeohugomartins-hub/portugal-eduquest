@@ -30,9 +30,6 @@ const StudentRegisterPage = () => {
   const [schools, setSchools] = useState<any[]>([]);
   const [schoolSearch, setSchoolSearch] = useState("");
   const [parentDistrict, setParentDistrict] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "authorized" | "not_authorized">("idle");
-  const [authorizedEmail, setAuthorizedEmail] = useState<any>(null);
 
   const loadSchools = async (district: string) => {
     const { data } = await supabase
