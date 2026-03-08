@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { LogOut, Users, ShieldCheck, Building2, UserPlus, Trash2, Shield, Ban, CheckCircle, Pencil, Eye, EyeOff, Search, ChevronLeft, ChevronRight, Tag, MailCheck } from "lucide-react";
 import { PromoCodesTab } from "@/components/admin/PromoCodesTab";
+import { GrantPremiumTab } from "@/components/admin/GrantPremiumTab";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 
