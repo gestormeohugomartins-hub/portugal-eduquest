@@ -449,6 +449,10 @@ export const VillageView = ({ student, onQuiz, onRefresh }: VillageViewProps) =>
           title={musicOn ? 'Desligar música' : 'Ligar música'}>
           {musicOn ? <Music className="w-4 h-4 text-primary" /> : <Volume2 className="w-4 h-4 text-muted-foreground" />}
         </Button>
+        <Button size="sm" variant="outline" onClick={() => { setShowTrade(true); SFX.click(); }}
+          className="h-8 bg-card/90 backdrop-blur-sm text-xs">
+          <ArrowLeftRight className="w-3.5 h-3.5 mr-1" />Trade
+        </Button>
         <Button size="sm" variant="outline" onClick={() => { setShowExpansion(true); SFX.click(); }}
           className="h-8 bg-card/90 backdrop-blur-sm text-xs">
           <Maximize className="w-3.5 h-3.5 mr-1" />Expandir
