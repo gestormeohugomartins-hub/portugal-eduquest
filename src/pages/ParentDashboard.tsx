@@ -62,6 +62,7 @@ const ParentDashboard = () => {
     if (user) {
       loadChildren();
       loadAuthorizedEmails();
+      loadPendingFriendships();
     }
   }, [user]);
 
