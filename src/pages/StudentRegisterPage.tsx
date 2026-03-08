@@ -294,31 +294,95 @@ const StudentRegisterPage = () => {
             </Select>
           </div>
 
-          {schools.length > 0 && (
-            <div>
-              <Label className="font-body font-semibold">
-                Escola {parentDistrict ? `(${districtLabels[parentDistrict] || parentDistrict})` : ""}
-              </Label>
+          {allSchoolsLoaded && (
+            <div className="space-y-2 p-3 border-2 border-border rounded-lg">
+              <Label className="font-body font-semibold">🏫 Escola</Label>
+              
+              {/* Filters row */}
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={schoolDistrictFilter} onValueChange={v => {
+                  setSchoolDistrictFilter(v);
+                  setSchoolMunicipalityFilter("");
+                  setFormData(prev => ({ ...prev, schoolId: "" }));
+                }}>
+                  <SelectTrigger className="text-xs h-8">
+                    <SelectValue placeholder="Distrito" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-48">
+                    <SelectItem value="all">Todos os distritos</SelectItem>
+                    {[...new Set(schools.map(s => s.district))].sort().map(d => (
+                      <SelectItem key={d} value={d}>{districtLabels[d] || d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={schoolMunicipalityFilter} onValueChange={v => {
+                  setSchoolMunicipalityFilter(v);
+                  setFormData(prev => ({ ...prev, schoolId: "" }));
+                }}>
+                  <SelectTrigger className="text-xs h-8">
+                    <SelectValue placeholder="Cidade" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-48">
+                    <SelectItem value="all">Todas as cidades</SelectItem>
+                    {[...new Set(
+                      schools
+                        .filter(s => !schoolDistrictFilter || schoolDistrictFilter === "all" || s.district === schoolDistrictFilter)
+                        .map(s => s.municipality)
+                        .filter(Boolean)
+                    )].sort().map(m => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Search */}
               <Input
-                placeholder="Pesquisar escola..."
+                placeholder="🔍 Pesquisar escola por nome..."
                 value={schoolSearch}
                 onChange={e => setSchoolSearch(e.target.value)}
-                className="mt-1 mb-2"
+                className="h-8 text-sm"
               />
+
+              {/* School select */}
               <Select value={formData.schoolId} onValueChange={v => setFormData({...formData, schoolId: v})}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Seleciona a tua escola" /></SelectTrigger>
-                <SelectContent className="max-h-48">
+                <SelectTrigger><SelectValue placeholder="Seleciona a tua escola" /></SelectTrigger>
+                <SelectContent className="max-h-52">
                   {schools
-                    .filter(s => s.name.toLowerCase().includes(schoolSearch.toLowerCase()) || 
-                                 (s.municipality || "").toLowerCase().includes(schoolSearch.toLowerCase()))
+                    .filter(s => {
+                      if (schoolDistrictFilter && schoolDistrictFilter !== "all" && s.district !== schoolDistrictFilter) return false;
+                      if (schoolMunicipalityFilter && schoolMunicipalityFilter !== "all" && s.municipality !== schoolMunicipalityFilter) return false;
+                      if (schoolSearch) {
+                        const q = schoolSearch.toLowerCase();
+                        return s.name.toLowerCase().includes(q) || 
+                               (s.municipality || "").toLowerCase().includes(q) ||
+                               (s.school_group || "").toLowerCase().includes(q);
+                      }
+                      return true;
+                    })
                     .map(school => (
                       <SelectItem key={school.id} value={school.id}>
-                        {school.name} — {school.municipality}
+                        <span className="font-semibold">{school.name}</span>
+                        <span className="text-muted-foreground text-xs ml-1">
+                          — {school.municipality}, {districtLabels[school.district] || school.district}
+                        </span>
                       </SelectItem>
                     ))
                   }
                 </SelectContent>
               </Select>
+              <p className="text-[10px] text-muted-foreground">
+                {schools.filter(s => {
+                  if (schoolDistrictFilter && schoolDistrictFilter !== "all" && s.district !== schoolDistrictFilter) return false;
+                  if (schoolMunicipalityFilter && schoolMunicipalityFilter !== "all" && s.municipality !== schoolMunicipalityFilter) return false;
+                  if (schoolSearch) {
+                    const q = schoolSearch.toLowerCase();
+                    return s.name.toLowerCase().includes(q) || (s.municipality || "").toLowerCase().includes(q);
+                  }
+                  return true;
+                }).length} escola(s) encontrada(s)
+              </p>
             </div>
           )}
 
