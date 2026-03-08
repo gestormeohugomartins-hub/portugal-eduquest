@@ -3,6 +3,7 @@ import { TILE_W, TILE_H, BUILDING_DEFS, PlacedBuilding, GridTile } from '@/lib/g
 import { gridToIso, applyBuildingsToGrid } from '@/lib/gridLogic';
 import { BUILDING_SPRITES, getSpriteImage, preloadSprites } from '@/lib/sprites';
 import { updateParticles, drawParticles, addSmokeParticle, addSparkle, drawFlag, drawWaterShimmer } from '@/lib/canvasEffects';
+import { AnimatedCitizen, Complaint } from '@/lib/simulation';
 
 interface IsometricCanvasProps {
   grid: GridTile[][];
@@ -12,6 +13,8 @@ interface IsometricCanvasProps {
   ghostPos: { x: number; y: number } | null;
   canPlaceGhost: boolean;
   productionReady: Set<string>;
+  animatedCitizens: AnimatedCitizen[];
+  complaints: Complaint[];
   onTileClick: (gx: number, gy: number) => void;
   onTileHover: (gx: number, gy: number) => void;
   onBuildingClick: (building: PlacedBuilding) => void;
@@ -21,10 +24,11 @@ const GRASS_COLORS = ['#4a7c3f', '#4e8243', '#467838', '#528645'];
 const ROAD_COLOR = '#a09070';
 const ROAD_BORDER = '#7a6a55';
 const WALL_COLOR = '#6b6b6b';
+const FARM_COLORS = ['#6b8e23', '#7a9e32', '#5a7e13'];
 
 export const IsometricCanvas = ({
   grid, buildings, gridSize, selectedBuilding, ghostPos, canPlaceGhost,
-  productionReady, onTileClick, onTileHover, onBuildingClick,
+  productionReady, animatedCitizens, complaints, onTileClick, onTileHover, onBuildingClick,
 }: IsometricCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [camera, setCamera] = useState({ x: 0, y: 0 });
@@ -41,7 +45,6 @@ export const IsometricCanvas = ({
   const originX = (gridSize * TILE_W) / 2;
   const originY = 50;
 
-  // Preload sprites
   useEffect(() => {
     preloadSprites().then(() => setSpritesLoaded(true));
   }, []);
@@ -71,21 +74,20 @@ export const IsometricCanvas = ({
     };
     loop();
     return () => { running = false; cancelAnimationFrame(animFrameRef.current); };
-  }, [fullGrid, buildings, camera, zoom, ghostPos, selectedBuilding, canPlaceGhost, gridSize, spritesLoaded, productionReady]);
+  }, [fullGrid, buildings, camera, zoom, ghostPos, selectedBuilding, canPlaceGhost, gridSize, spritesLoaded, productionReady, animatedCitizens, complaints]);
 
-  // Add smoke to workshops periodically
+  // Smoke effects
   useEffect(() => {
     const interval = setInterval(() => {
       for (const b of buildings) {
         const def = BUILDING_DEFS[b.defId];
         if (!def) continue;
-        if (def.id === 'workshop' || def.id === 'market') {
+        if (def.id === 'workshop' || def.id === 'market' || def.id === 'windmill') {
           const cx = b.x + def.width / 2 - 0.5;
           const cy = b.y + def.height / 2 - 0.5;
           const { sx, sy } = gridToIso(cx, cy, TILE_W, TILE_H);
           addSmokeParticle(sx, sy - 20);
         }
-        // Sparkles on buildings with ready production
         if (productionReady.has(b.id)) {
           const cx = b.x + def.width / 2 - 0.5;
           const cy = b.y + def.height / 2 - 0.5;
@@ -127,7 +129,7 @@ export const IsometricCanvas = ({
         const tile = fullGrid[y]?.[x];
         if (!tile) continue;
         const { sx, sy } = gridToIso(x, y, TILE_W, TILE_H);
-        drawIsoDiamond(ctx, sx, sy, tile.type, x, y);
+        drawIsoDiamond(ctx, sx, sy, tile.type, x, y, tile.buildingId, buildings);
       }
     }
 
@@ -145,7 +147,6 @@ export const IsometricCanvas = ({
             ctx.globalAlpha = 1;
           }
         }
-        // Ghost building preview
         const { sx, sy } = gridToIso(ghostPos.x, ghostPos.y, TILE_W, TILE_H);
         ctx.globalAlpha = 0.6;
         drawBuildingSprite(ctx, def.id, sx, sy, def.width, def.height, 1);
@@ -153,7 +154,7 @@ export const IsometricCanvas = ({
       }
     }
 
-    // Draw buildings (sorted by depth)
+    // Draw buildings sorted by depth
     const sorted = [...buildings].sort((a, b) => (a.y + a.x) - (b.y + b.x));
     for (const b of sorted) {
       const def = BUILDING_DEFS[b.defId];
@@ -163,7 +164,7 @@ export const IsometricCanvas = ({
       const cy = b.y + def.height / 2 - 0.5;
       const { sx, sy } = gridToIso(cx, cy, TILE_W, TILE_H);
 
-      if (def.id === 'road' || def.id === 'wall') continue; // rendered as tile
+      if (def.id === 'road' || def.id === 'wall') continue;
 
       // Shadow
       ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -171,17 +172,26 @@ export const IsometricCanvas = ({
       ctx.ellipse(sx, sy + 4, 16 * def.width, 8 * def.height, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw sprite or emoji
       drawBuildingSprite(ctx, b.defId, sx, sy, def.width, def.height, b.level);
 
-      // Flags on towers
+      // Flags on towers/monuments
       if (def.id === 'tower' || def.category === 'monument') {
         drawFlag(ctx, sx + 8, sy - 20 - (b.level - 1) * 2, time);
       }
 
-      // Fountain water animation
-      if (def.id === 'fountain') {
+      // Fountain water
+      if (def.id === 'fountain' || def.id === 'well') {
         drawWaterShimmer(ctx, sx, sy - 8, 20, time);
+      }
+
+      // Farm crop animation
+      if (def.id === 'farm') {
+        drawFarmCrops(ctx, sx, sy, b.level, time);
+      }
+
+      // Hospital cross
+      if (def.id === 'hospital') {
+        drawCross(ctx, sx, sy - 25, time);
       }
 
       // Level badge
@@ -213,11 +223,81 @@ export const IsometricCanvas = ({
       }
     }
 
+    // Draw animated citizens
+    for (const citizen of animatedCitizens) {
+      const { sx, sy } = gridToIso(citizen.x, citizen.y, TILE_W, TILE_H);
+      drawCitizen(ctx, sx, sy, citizen, time);
+    }
+
     // Draw particles
     updateParticles();
     drawParticles(ctx);
 
     ctx.restore();
+  }
+
+  function drawCitizen(ctx: CanvasRenderingContext2D, sx: number, sy: number, citizen: AnimatedCitizen, time: number) {
+    // Body
+    const bobble = Math.sin(time * 8 + citizen.id) * 1;
+    ctx.fillStyle = citizen.color;
+    ctx.beginPath();
+    ctx.ellipse(sx, sy - 4 + bobble, 3, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Head
+    ctx.fillStyle = '#f5d0a0';
+    ctx.beginPath();
+    ctx.arc(sx, sy - 10 + bobble, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath();
+    ctx.ellipse(sx, sy + 2, 3, 1.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Complaint bubble
+    if (citizen.complaint && citizen.complaintTimer > 0) {
+      const alpha = Math.min(1, citizen.complaintTimer / 30);
+      ctx.globalAlpha = alpha;
+      // Bubble
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.roundRect(sx - 18, sy - 26 + bobble, 36, 14, 4);
+      ctx.fill();
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+      // Text
+      ctx.fillStyle = '#333';
+      ctx.font = '7px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(citizen.complaint, sx, sy - 17 + bobble);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawFarmCrops(ctx: CanvasRenderingContext2D, sx: number, sy: number, level: number, time: number) {
+    // Draw little crop rows
+    const cropColors = ['#228B22', '#32CD32', '#6B8E23', '#9ACD32'];
+    for (let i = 0; i < 3 + level; i++) {
+      const ox = (i - 2) * 6;
+      const oy = (i % 2) * 3 - 2;
+      const sway = Math.sin(time * 2 + i) * 1;
+      ctx.fillStyle = cropColors[i % cropColors.length];
+      ctx.beginPath();
+      ctx.ellipse(sx + ox + sway, sy + oy - 3, 2, 3 + level * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawCross(ctx: CanvasRenderingContext2D, sx: number, sy: number, time: number) {
+    const pulse = Math.sin(time * 2) * 0.1 + 0.9;
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = '#ff3333';
+    ctx.fillRect(sx - 1.5, sy - 5, 3, 10);
+    ctx.fillRect(sx - 5, sy - 1.5, 10, 3);
+    ctx.globalAlpha = 1;
   }
 
   function drawBuildingSprite(ctx: CanvasRenderingContext2D, defId: string, sx: number, sy: number, bw: number, bh: number, level: number) {
@@ -227,13 +307,8 @@ export const IsometricCanvas = ({
     if (img && sprite) {
       const drawW = 32 + (bw - 1) * 24 + (level - 1) * 4;
       const drawH = drawW * (sprite.sh / sprite.sw);
-      ctx.drawImage(
-        img,
-        sprite.sx, sprite.sy, sprite.sw, sprite.sh,
-        sx - drawW / 2, sy - drawH + 8, drawW, drawH
-      );
+      ctx.drawImage(img, sprite.sx, sprite.sy, sprite.sw, sprite.sh, sx - drawW / 2, sy - drawH + 8, drawW, drawH);
     } else {
-      // Fallback to emoji
       const def = BUILDING_DEFS[defId];
       if (def) {
         const baseSize = 22 + (bw - 1) * 10;
@@ -245,11 +320,23 @@ export const IsometricCanvas = ({
     }
   }
 
-  function drawIsoDiamond(ctx: CanvasRenderingContext2D, sx: number, sy: number, type: string, x: number, y: number) {
+  function drawIsoDiamond(ctx: CanvasRenderingContext2D, sx: number, sy: number, type: string, x: number, y: number, buildingId: string | undefined, allBuildings: PlacedBuilding[]) {
     let color: string;
     if (type === 'road') color = ROAD_COLOR;
     else if (type === 'wall') color = WALL_COLOR;
-    else color = GRASS_COLORS[(x + y * 3) % GRASS_COLORS.length];
+    else {
+      // Check if this tile is a farm
+      if (buildingId) {
+        const b = allBuildings.find(b => b.id === buildingId);
+        if (b && b.defId === 'farm') {
+          color = FARM_COLORS[(x + y) % FARM_COLORS.length];
+        } else {
+          color = GRASS_COLORS[(x + y * 3) % GRASS_COLORS.length];
+        }
+      } else {
+        color = GRASS_COLORS[(x + y * 3) % GRASS_COLORS.length];
+      }
+    }
 
     drawDiamondPath(ctx, sx, sy);
     ctx.fillStyle = color;
@@ -268,7 +355,7 @@ export const IsometricCanvas = ({
     ctx.closePath();
   }
 
-  // Mouse/touch handlers (same as before)
+  // Mouse/touch handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     setDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
