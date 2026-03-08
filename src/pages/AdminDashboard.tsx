@@ -58,6 +58,11 @@ const AdminDashboard = () => {
   // Delete confirm
   const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null);
 
+  // Search & pagination
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
+
   // Stats
   const [stats, setStats] = useState({ totalStudents: 0, totalParents: 0, totalAssociations: 0, totalAdmins: 0 });
 
