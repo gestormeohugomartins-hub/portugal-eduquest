@@ -144,8 +144,123 @@ const ParentDashboard = () => {
     }
     setSavingDistrict(false);
   };
+  const loadPendingFriendships = async () => {
+    if (!user) return;
+    // Get all children IDs
+    const { data: kids } = await supabase
+      .from("students")
+      .select("id, display_name, nickname")
+      .eq("parent_id", user.id);
+    if (!kids || kids.length === 0) return;
 
-  if (loading) {
+    const kidIds = kids.map(k => k.id);
+    const kidMap = new Map(kids.map(k => [k.id, k]));
+
+    // Get all pending friendships involving my children
+    const { data: friendships } = await supabase
+      .from("friendships")
+      .select("*")
+      .eq("status", "pending_parent_approval")
+      .or(kidIds.map(id => `requester_id.eq.${id}`).join(",") + "," + kidIds.map(id => `receiver_id.eq.${id}`).join(","));
+
+    if (!friendships) return;
+
+    // Get other player info
+    const otherIds = friendships.map(f => {
+      const myChildId = kidIds.find(id => id === f.requester_id || id === f.receiver_id);
+      return f.requester_id === myChildId ? f.receiver_id : f.requester_id;
+    });
+    const { data: otherPlayers } = await supabase
+      .from("students")
+      .select("id, nickname, display_name")
+      .in("id", [...new Set(otherIds)]);
+
+    const playerMap = new Map(otherPlayers?.map(p => [p.id, p]) || []);
+
+    const enriched = friendships.map(f => {
+      const myChildId = kidIds.find(id => id === f.requester_id || id === f.receiver_id)!;
+      const otherId = f.requester_id === myChildId ? f.receiver_id : f.requester_id;
+      const isRequester = f.requester_id === myChildId;
+      return {
+        ...f,
+        myChild: kidMap.get(myChildId),
+        otherPlayer: playerMap.get(otherId),
+        isRequester,
+        needsMyApproval: isRequester ? !f.requester_parent_approved : !f.receiver_parent_approved,
+      };
+    });
+
+    setPendingFriendships(enriched);
+  };
+
+  const handleApproveFriendship = async (friendshipId: string, isRequester: boolean) => {
+    const updateField = isRequester ? "requester_parent_approved" : "receiver_parent_approved";
+
+    // First update my approval
+    const { error } = await supabase
+      .from("friendships")
+      .update({ [updateField]: true })
+      .eq("id", friendshipId);
+
+    if (error) {
+      toast.error("Erro ao aprovar: " + error.message);
+      return;
+    }
+
+    // Check if both parents approved - if so, set status to approved
+    const { data: updated } = await supabase
+      .from("friendships")
+      .select("*")
+      .eq("id", friendshipId)
+      .single();
+
+    if (updated && updated.requester_parent_approved && updated.receiver_parent_approved) {
+      await supabase
+        .from("friendships")
+        .update({ status: "approved" })
+        .eq("id", friendshipId);
+      toast.success("Amizade aprovada por ambos os encarregados! 🎉");
+    } else {
+      toast.success("Aprovado! A aguardar o outro encarregado de educação.");
+    }
+
+    loadPendingFriendships();
+  };
+
+  const handleRejectFriendship = async (friendshipId: string) => {
+    await supabase
+      .from("friendships")
+      .update({ status: "rejected" })
+      .eq("id", friendshipId);
+    toast.info("Pedido de amizade rejeitado.");
+    loadPendingFriendships();
+  };
+
+  const handleUpgradeChild = async (childId: string) => {
+    setCheckingOutChild(childId);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { studentId: childId },
+      });
+      if (error) throw error;
+      if (data?.url) window.open(data.url, "_blank");
+    } catch (error: any) {
+      toast.error("Erro ao iniciar pagamento: " + error.message);
+    }
+    setCheckingOutChild(null);
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("customer-portal");
+      if (error) throw error;
+      if (data?.url) window.open(data.url, "_blank");
+    } catch (error: any) {
+      toast.error("Erro: " + error.message);
+    }
+  };
+
+
     return (
       <div className="min-h-screen flex items-center justify-center parchment-bg">
         <p className="font-display text-xl">A carregar...</p>
