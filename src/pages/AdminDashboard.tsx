@@ -1,68 +1,169 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, Users, ShieldCheck, Building2, UserPlus, Trash2, Shield } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { LogOut, Users, ShieldCheck, Building2, UserPlus, Trash2, Shield, Ban, CheckCircle, Pencil, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 
+interface AdminUser {
+  id: string;
+  email: string;
+  created_at: string;
+  banned: boolean;
+  banned_until: string | null;
+  display_name: string;
+  app_role: string | null;
+  admin_role: string | null;
+  is_premium: boolean;
+  school_year: string | null;
+  district: string | null;
+}
+
 const AdminDashboard = () => {
-  const { user, session, loading, signOut } = useAuth();
-  const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  // Auth state
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Data
+  const [allUsers, setAllUsers] = useState<AdminUser[]>([]);
   const [associations, setAssociations] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [parents, setParents] = useState<any[]>([]);
   const [adminRoles, setAdminRoles] = useState<any[]>([]);
-  const [newAdminEmail, setNewAdminEmail] = useState("");
-  const [newAdminRole, setNewAdminRole] = useState("admin");
-  const [stats, setStats] = useState({ totalStudents: 0, totalParents: 0, totalAssociations: 0 });
 
-  // Check admin role from DB via edge function
+  // Create user form
+  const [createEmail, setCreateEmail] = useState("");
+  const [createPassword, setCreatePassword] = useState("");
+  const [createDisplayName, setCreateDisplayName] = useState("");
+  const [createRole, setCreateRole] = useState("parent");
+
+  // Edit modal
+  const [editUser, setEditUser] = useState<AdminUser | null>(null);
+  const [editDisplayName, setEditDisplayName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+  const [editAdminRole, setEditAdminRole] = useState("none");
+
+  // Delete confirm
+  const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null);
+
+  // Stats
+  const [stats, setStats] = useState({ totalStudents: 0, totalParents: 0, totalAssociations: 0, totalAdmins: 0 });
+
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/login");
-      return;
-    }
-    if (user && session) {
-      checkAdminRole();
-    }
-  }, [user, loading, session]);
+    checkSession();
 
-  const checkAdminRole = async () => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser(session.user);
+        setIsLoggedIn(true);
+        verifyAdmin(session.user);
+      } else {
+        setCurrentUser(null);
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      setCurrentUser(session.user);
+      setIsLoggedIn(true);
+      await verifyAdmin(session.user);
+    } else {
+      setLoading(false);
+    }
+  };
+
+  const verifyAdmin = async (u: any) => {
     try {
       const { data, error } = await supabase.functions.invoke("manage-admins", {
         body: { action: "check" },
       });
 
-      if (error) {
-        console.error("Admin check error:", error);
+      if (error || !data?.isAdmin) {
         setIsAdmin(false);
+        setLoading(false);
+        toast.error("Acesso restrito a administradores. Esta conta não tem permissões de admin.");
         return;
       }
 
-      if (data?.noAdmins) {
-        // No admins exist - show bootstrap screen
-        setIsAdmin(false);
-        return;
-      }
-
-      if (data?.isAdmin) {
-        setIsAdmin(true);
-        loadAdminList();
-        loadData();
-      } else {
-        setIsAdmin(false);
-        toast.error("Acesso restrito a administradores.");
-        navigate("/");
-      }
+      setIsAdmin(true);
+      setLoading(false);
+      loadAllData();
     } catch {
       setIsAdmin(false);
+      setLoading(false);
     }
+  };
+
+  const handleLogin = async () => {
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      toast.error("Preencha email e password.");
+      return;
+    }
+    setLoginLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: loginEmail.trim(),
+      password: loginPassword.trim(),
+    });
+    setLoginLoading(false);
+
+    if (error) {
+      toast.error("Credenciais inválidas.");
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsLoggedIn(false);
+    setIsAdmin(false);
+    setCurrentUser(null);
+    setAllUsers([]);
+  };
+
+  const loadAllData = async () => {
+    await Promise.all([loadUsers(), loadAssociations(), loadAdminList()]);
+  };
+
+  const loadUsers = async () => {
+    const { data, error } = await supabase.functions.invoke("manage-users", {
+      body: { action: "list" },
+    });
+    if (data?.users) {
+      setAllUsers(data.users);
+      const students = data.users.filter((u: AdminUser) => u.app_role === "student");
+      const parents = data.users.filter((u: AdminUser) => u.app_role === "parent");
+      const admins = data.users.filter((u: AdminUser) => u.admin_role);
+      setStats(prev => ({
+        ...prev,
+        totalStudents: students.length,
+        totalParents: parents.length,
+        totalAdmins: admins.length,
+      }));
+    }
+  };
+
+  const loadAssociations = async () => {
+    const { data } = await supabase.from("parent_associations").select("*").order("created_at", { ascending: false });
+    setAssociations(data || []);
+    setStats(prev => ({ ...prev, totalAssociations: data?.length || 0 }));
   };
 
   const loadAdminList = async () => {
@@ -72,113 +173,213 @@ const AdminDashboard = () => {
     if (data?.roles) setAdminRoles(data.roles);
   };
 
-  const handleBootstrap = async () => {
-    const { data, error } = await supabase.functions.invoke("manage-admins", {
-      body: { action: "bootstrap" },
-    });
-
-    if (error || data?.error) {
-      toast.error(data?.error || "Erro ao configurar admin.");
-      return;
-    }
-
-    toast.success("Configurado como Super Admin!");
-    setIsAdmin(true);
-    checkAdminRole();
-  };
-
-  const loadData = async () => {
-    const [assocRes, studentsRes, parentsRes] = await Promise.all([
-      supabase.from("parent_associations").select("*").order("created_at", { ascending: false }),
-      supabase.from("students").select("*").order("created_at", { ascending: false }),
-      supabase.from("profiles").select("*").eq("role", "parent").order("created_at", { ascending: false }),
-    ]);
-
-    setAssociations(assocRes.data || []);
-    setStudents(studentsRes.data || []);
-    setParents(parentsRes.data || []);
-    setStats({
-      totalStudents: studentsRes.data?.length || 0,
-      totalParents: parentsRes.data?.length || 0,
-      totalAssociations: assocRes.data?.length || 0,
-    });
-  };
-
   const handleAssociationStatus = async (id: string, status: string) => {
-    const { error } = await supabase
-      .from("parent_associations")
-      .update({ status })
-      .eq("id", id);
-    if (error) {
-      toast.error("Erro ao atualizar estado.");
-    } else {
+    const { error } = await supabase.from("parent_associations").update({ status }).eq("id", id);
+    if (error) toast.error("Erro ao atualizar estado.");
+    else {
       toast.success(`Associação ${status === "approved" ? "aprovada" : "rejeitada"}.`);
-      loadData();
+      loadAssociations();
     }
   };
 
-  const handleAddAdmin = async () => {
-    if (!newAdminEmail.trim()) return;
-
-    const { data, error } = await supabase.functions.invoke("manage-admins", {
-      body: { action: "add", email: newAdminEmail.trim(), role: newAdminRole },
-    });
-
-    if (error || data?.error) {
-      toast.error(data?.error || "Erro ao adicionar admin.");
+  const handleCreateUser = async () => {
+    if (!createEmail.trim() || !createPassword.trim()) {
+      toast.error("Email e password são obrigatórios.");
       return;
     }
 
-    toast.success(`Admin ${newAdminEmail} adicionado!`);
-    setNewAdminEmail("");
-    checkAdminRole();
-  };
-
-  const handleRemoveAdmin = async (email: string) => {
-    const { data, error } = await supabase.functions.invoke("manage-admins", {
-      body: { action: "remove", email },
+    const { data, error } = await supabase.functions.invoke("manage-users", {
+      body: {
+        action: "create",
+        email: createEmail.trim(),
+        password: createPassword.trim(),
+        role: createRole,
+        display_name: createDisplayName.trim() || undefined,
+      },
     });
 
     if (error || data?.error) {
-      toast.error(data?.error || "Erro ao remover admin.");
+      toast.error(data?.error || "Erro ao criar utilizador.");
       return;
     }
 
-    toast.success("Admin removido.");
-    checkAdminRole();
+    toast.success("Utilizador criado com sucesso!");
+    setCreateEmail("");
+    setCreatePassword("");
+    setCreateDisplayName("");
+    setCreateRole("parent");
+    loadAllData();
   };
 
-  if (loading || isAdmin === null) {
+  const handleSuspend = async (userId: string) => {
+    const { data, error } = await supabase.functions.invoke("manage-users", {
+      body: { action: "suspend", user_id: userId },
+    });
+    if (error || data?.error) toast.error(data?.error || "Erro ao suspender.");
+    else { toast.success("Utilizador suspenso."); loadUsers(); }
+  };
+
+  const handleUnsuspend = async (userId: string) => {
+    const { data, error } = await supabase.functions.invoke("manage-users", {
+      body: { action: "unsuspend", user_id: userId },
+    });
+    if (error || data?.error) toast.error(data?.error || "Erro.");
+    else { toast.success("Suspensão removida."); loadUsers(); }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteUser) return;
+    const { data, error } = await supabase.functions.invoke("manage-users", {
+      body: { action: "delete", user_id: deleteUser.id },
+    });
+    if (error || data?.error) toast.error(data?.error || "Erro ao eliminar.");
+    else { toast.success("Utilizador eliminado."); loadAllData(); }
+    setDeleteUser(null);
+  };
+
+  const openEdit = (u: AdminUser) => {
+    setEditUser(u);
+    setEditDisplayName(u.display_name);
+    setEditEmail(u.email);
+    setEditPassword("");
+    setEditAdminRole(u.admin_role || "none");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editUser) return;
+    const { data, error } = await supabase.functions.invoke("manage-users", {
+      body: {
+        action: "update",
+        user_id: editUser.id,
+        display_name: editDisplayName || undefined,
+        email: editEmail !== editUser.email ? editEmail : undefined,
+        password: editPassword || undefined,
+        admin_role: editAdminRole === "none" ? null : editAdminRole,
+      },
+    });
+    if (error || data?.error) toast.error(data?.error || "Erro ao atualizar.");
+    else { toast.success("Utilizador atualizado."); loadAllData(); }
+    setEditUser(null);
+  };
+
+  // --- RENDER ---
+
+  // Loading
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="font-display text-xl">A carregar...</p>
+        <p className="font-display text-xl animate-pulse">A carregar...</p>
       </div>
     );
   }
 
-  // Bootstrap screen - first admin setup
-  if (isAdmin === false && user) {
+  // Login screen
+  if (!isLoggedIn || !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="max-w-md w-full text-center">
-          <img src={logo} alt="Questeduca" className="w-20 mx-auto mb-4" />
-          <h1 className="font-display text-2xl font-bold mb-2">Configuração Admin</h1>
-          <p className="font-body text-muted-foreground mb-6">
-            Não existem administradores configurados. Configurar esta conta como Super Admin?
-          </p>
-          <p className="font-body text-sm text-muted-foreground mb-4">
-            Logado como: <strong>{user.email}</strong>
-          </p>
-          <Button onClick={handleBootstrap} className="bg-primary text-primary-foreground font-bold">
-            <Shield className="w-4 h-4 mr-2" /> Configurar como Super Admin
-          </Button>
-          <Button variant="ghost" className="mt-3 w-full" onClick={() => navigate("/")}>
-            Voltar ao Início
-          </Button>
+        <div className="max-w-sm w-full">
+          <div className="text-center mb-8">
+            <img src={logo} alt="Questeduca" className="w-16 mx-auto mb-4" />
+            <h1 className="font-display text-2xl font-bold text-foreground">Administração</h1>
+            <p className="font-body text-sm text-muted-foreground mt-1">Acesso restrito a administradores</p>
+          </div>
+
+          {isLoggedIn && !isAdmin && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 mb-4 text-center">
+              <p className="font-body text-sm text-destructive font-medium">
+                A conta <strong>{currentUser?.email}</strong> não tem permissões de administrador.
+              </p>
+              <Button variant="ghost" size="sm" className="mt-2 text-muted-foreground" onClick={handleLogout}>
+                Sair e tentar outra conta
+              </Button>
+            </div>
+          )}
+
+          {!isLoggedIn && (
+            <div className="bg-card rounded-xl border border-border p-6 space-y-4">
+              <div>
+                <label className="font-body text-sm font-medium text-foreground mb-1 block">Email</label>
+                <Input
+                  type="email"
+                  placeholder="admin@email.com"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                />
+              </div>
+              <div>
+                <label className="font-body text-sm font-medium text-foreground mb-1 block">Password</label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleLogin} disabled={loginLoading}>
+                {loginLoading ? "A entrar..." : "Entrar"}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
   }
+
+  // Filtered lists
+  const studentUsers = allUsers.filter(u => u.app_role === "student");
+  const parentUsers = allUsers.filter(u => u.app_role === "parent" && !u.admin_role);
+  const adminUsers = allUsers.filter(u => u.admin_role);
+
+  const UserRow = ({ u }: { u: AdminUser }) => (
+    <tr className="border-b border-border/50">
+      <td className="p-2 font-body font-semibold text-sm">{u.display_name}</td>
+      <td className="p-2 font-body text-sm">{u.email}</td>
+      <td className="p-2 font-body text-sm">
+        {u.banned ? (
+          <span className="text-xs px-2 py-0.5 rounded bg-destructive/20 text-destructive">Suspenso</span>
+        ) : (
+          <span className="text-xs px-2 py-0.5 rounded bg-secondary/20 text-secondary">Ativo</span>
+        )}
+        {u.admin_role && (
+          <span className="ml-1 text-xs px-2 py-0.5 rounded bg-primary/20 text-primary">
+            {u.admin_role === "super_admin" ? "Super Admin" : "Admin"}
+          </span>
+        )}
+      </td>
+      <td className="p-2">
+        <div className="flex gap-1">
+          <Button size="sm" variant="ghost" onClick={() => openEdit(u)} title="Editar">
+            <Pencil className="w-3 h-3" />
+          </Button>
+          {u.banned ? (
+            <Button size="sm" variant="ghost" onClick={() => handleUnsuspend(u.id)} title="Reativar" className="text-secondary">
+              <CheckCircle className="w-3 h-3" />
+            </Button>
+          ) : u.id !== currentUser?.id ? (
+            <Button size="sm" variant="ghost" onClick={() => handleSuspend(u.id)} title="Suspender" className="text-accent">
+              <Ban className="w-3 h-3" />
+            </Button>
+          ) : null}
+          {u.id !== currentUser?.id && (
+            <Button size="sm" variant="ghost" onClick={() => setDeleteUser(u)} title="Eliminar" className="text-destructive">
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -189,10 +390,10 @@ const AdminDashboard = () => {
             <img src={logo} alt="Questeduca" className="w-10 h-10" />
             <div>
               <h1 className="font-display text-lg font-bold">Painel Administração</h1>
-              <p className="font-body text-xs text-muted-foreground">{user?.email}</p>
+              <p className="font-body text-xs text-muted-foreground">{currentUser?.email}</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/"); }}>
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
             <LogOut className="w-4 h-4" />
           </Button>
         </div>
@@ -200,40 +401,77 @@ const AdminDashboard = () => {
 
       {/* Stats */}
       <div className="max-w-6xl mx-auto p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
             { label: "Alunos", value: stats.totalStudents, icon: Users, color: "bg-primary/10 text-primary" },
             { label: "Pais", value: stats.totalParents, icon: ShieldCheck, color: "bg-secondary/10 text-secondary" },
             { label: "Associações", value: stats.totalAssociations, icon: Building2, color: "bg-accent/10 text-accent" },
+            { label: "Admins", value: stats.totalAdmins, icon: Shield, color: "bg-primary/10 text-primary" },
           ].map((s) => (
-            <div key={s.label} className="bg-card rounded-xl border border-border p-4 flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${s.color}`}>
-                <s.icon className="w-6 h-6" />
+            <div key={s.label} className="bg-card rounded-xl border border-border p-4 flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${s.color}`}>
+                <s.icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-body text-2xl font-bold">{s.value}</p>
-                <p className="font-body text-sm text-muted-foreground">{s.label}</p>
+                <p className="font-body text-xl font-bold">{s.value}</p>
+                <p className="font-body text-xs text-muted-foreground">{s.label}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <Tabs defaultValue="associations">
+        <Tabs defaultValue="users">
           <TabsList className="w-full grid grid-cols-4 mb-6">
+            <TabsTrigger value="users" className="font-body text-xs">
+              <Users className="w-4 h-4 mr-1" /> Utilizadores
+            </TabsTrigger>
             <TabsTrigger value="associations" className="font-body text-xs">
               <Building2 className="w-4 h-4 mr-1" /> Associações
             </TabsTrigger>
-            <TabsTrigger value="students" className="font-body text-xs">
-              <Users className="w-4 h-4 mr-1" /> Alunos
-            </TabsTrigger>
-            <TabsTrigger value="parents" className="font-body text-xs">
-              <ShieldCheck className="w-4 h-4 mr-1" /> Pais
+            <TabsTrigger value="create" className="font-body text-xs">
+              <UserPlus className="w-4 h-4 mr-1" /> Criar
             </TabsTrigger>
             <TabsTrigger value="admins" className="font-body text-xs">
               <Shield className="w-4 h-4 mr-1" /> Admins
             </TabsTrigger>
           </TabsList>
 
+          {/* USERS TAB */}
+          <TabsContent value="users">
+            <div className="space-y-6">
+              {/* Students */}
+              <div>
+                <h2 className="font-display text-lg font-bold mb-2">Alunos ({studentUsers.length})</h2>
+                {studentUsers.length === 0 ? (
+                  <p className="font-body text-sm text-muted-foreground">Nenhum aluno.</p>
+                ) : (
+                  <div className="overflow-x-auto bg-card rounded-xl border border-border">
+                    <table className="w-full font-body text-sm">
+                      <thead><tr className="border-b border-border text-left"><th className="p-2">Nome</th><th className="p-2">Email</th><th className="p-2">Estado</th><th className="p-2">Ações</th></tr></thead>
+                      <tbody>{studentUsers.map(u => <UserRow key={u.id} u={u} />)}</tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Parents */}
+              <div>
+                <h2 className="font-display text-lg font-bold mb-2">Pais ({parentUsers.length})</h2>
+                {parentUsers.length === 0 ? (
+                  <p className="font-body text-sm text-muted-foreground">Nenhum pai.</p>
+                ) : (
+                  <div className="overflow-x-auto bg-card rounded-xl border border-border">
+                    <table className="w-full font-body text-sm">
+                      <thead><tr className="border-b border-border text-left"><th className="p-2">Nome</th><th className="p-2">Email</th><th className="p-2">Estado</th><th className="p-2">Ações</th></tr></thead>
+                      <tbody>{parentUsers.map(u => <UserRow key={u.id} u={u} />)}</tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* ASSOCIATIONS TAB */}
           <TabsContent value="associations">
             <div className="space-y-4">
               <h2 className="font-display text-xl font-bold">Associações de Pais</h2>
@@ -251,9 +489,6 @@ const AdminDashboard = () => {
                         <p className="font-body text-sm text-muted-foreground">
                           Email: {a.email} • IBAN: {a.iban || "N/D"}
                         </p>
-                        <p className="font-body text-xs text-muted-foreground mt-1">
-                          Total angariado: €{(a.total_raised / 100).toFixed(2)} • Total pago: €{(a.total_paid / 100).toFixed(2)}
-                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`text-xs font-body px-2 py-1 rounded ${
@@ -265,12 +500,8 @@ const AdminDashboard = () => {
                         </span>
                         {a.status === "pending" && (
                           <>
-                            <Button size="sm" onClick={() => handleAssociationStatus(a.id, "approved")} className="bg-secondary text-secondary-foreground text-xs">
-                              Aprovar
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleAssociationStatus(a.id, "rejected")} className="text-xs">
-                              Rejeitar
-                            </Button>
+                            <Button size="sm" onClick={() => handleAssociationStatus(a.id, "approved")} className="bg-secondary text-secondary-foreground text-xs">Aprovar</Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleAssociationStatus(a.id, "rejected")} className="text-xs">Rejeitar</Button>
                           </>
                         )}
                       </div>
@@ -281,139 +512,137 @@ const AdminDashboard = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="students">
-            <div className="space-y-4">
-              <h2 className="font-display text-xl font-bold">Alunos Registados</h2>
-              {students.length === 0 ? (
-                <p className="font-body text-muted-foreground">Nenhum aluno registado.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full font-body text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-left">
-                        <th className="p-2">Nome</th>
-                        <th className="p-2">Ano</th>
-                        <th className="p-2">Nível</th>
-                        <th className="p-2">XP</th>
-                        <th className="p-2">Premium</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {students.map((s) => (
-                        <tr key={s.id} className="border-b border-border/50">
-                          <td className="p-2 font-semibold">{s.display_name}</td>
-                          <td className="p-2">{s.school_year}º</td>
-                          <td className="p-2">{s.village_level}</td>
-                          <td className="p-2">{s.xp}</td>
-                          <td className="p-2">{s.is_premium ? "✅" : "❌"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="parents">
-            <div className="space-y-4">
-              <h2 className="font-display text-xl font-bold">Pais Registados</h2>
-              {parents.length === 0 ? (
-                <p className="font-body text-muted-foreground">Nenhum pai registado.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full font-body text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-left">
-                        <th className="p-2">Nome</th>
-                        <th className="p-2">Email</th>
-                        <th className="p-2">Distrito</th>
-                        <th className="p-2">Desde</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {parents.map((p) => (
-                        <tr key={p.id} className="border-b border-border/50">
-                          <td className="p-2 font-semibold">{p.display_name}</td>
-                          <td className="p-2">{p.email}</td>
-                          <td className="p-2">{p.district || "N/D"}</td>
-                          <td className="p-2">{new Date(p.created_at).toLocaleDateString("pt-PT")}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="admins">
-            <div className="space-y-6">
-              <h2 className="font-display text-xl font-bold">Gestão de Administradores</h2>
-              
-              {/* Add new admin */}
-              <div className="bg-card rounded-xl border border-border p-4">
-                <h3 className="font-body font-bold mb-3">Adicionar Novo Admin</h3>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Input
-                    type="email"
-                    placeholder="Email do utilizador"
-                    value={newAdminEmail}
-                    onChange={(e) => setNewAdminEmail(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Select value={newAdminRole} onValueChange={setNewAdminRole}>
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue />
-                    </SelectTrigger>
+          {/* CREATE USER TAB */}
+          <TabsContent value="create">
+            <div className="max-w-lg">
+              <h2 className="font-display text-xl font-bold mb-4">Criar Novo Utilizador</h2>
+              <div className="bg-card rounded-xl border border-border p-6 space-y-4">
+                <div>
+                  <label className="font-body text-sm font-medium block mb-1">Tipo de conta</label>
+                  <Select value={createRole} onValueChange={setCreateRole}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="parent">Pai/Encarregado</SelectItem>
+                      <SelectItem value="student">Aluno/Jogador</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="super_admin">Super Admin</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button onClick={handleAddAdmin} className="bg-primary text-primary-foreground">
-                    <UserPlus className="w-4 h-4 mr-1" /> Adicionar
-                  </Button>
                 </div>
-                <p className="font-body text-xs text-muted-foreground mt-2">
-                  O utilizador precisa estar registado primeiro. Super Admins podem gerir outros admins.
-                </p>
+                <div>
+                  <label className="font-body text-sm font-medium block mb-1">Nome</label>
+                  <Input value={createDisplayName} onChange={(e) => setCreateDisplayName(e.target.value)} placeholder="Nome do utilizador" />
+                </div>
+                <div>
+                  <label className="font-body text-sm font-medium block mb-1">Email</label>
+                  <Input type="email" value={createEmail} onChange={(e) => setCreateEmail(e.target.value)} placeholder="email@exemplo.com" />
+                </div>
+                <div>
+                  <label className="font-body text-sm font-medium block mb-1">Password</label>
+                  <Input type="text" value={createPassword} onChange={(e) => setCreatePassword(e.target.value)} placeholder="Password inicial" />
+                </div>
+                <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleCreateUser}>
+                  <UserPlus className="w-4 h-4 mr-2" /> Criar Utilizador
+                </Button>
               </div>
+            </div>
+          </TabsContent>
 
-              {/* Current admins */}
-              <div className="space-y-2">
-                <h3 className="font-body font-bold">Admins Atuais</h3>
-                {adminRoles.length === 0 ? (
-                  <p className="font-body text-muted-foreground">Nenhum admin configurado.</p>
-                ) : (
-                  adminRoles.map((r) => (
-                    <div key={r.id} className="flex items-center justify-between bg-card rounded-lg border border-border p-3">
-                      <div>
-                        <span className="font-body font-semibold">{r.email}</span>
-                        <span className={`ml-2 text-xs px-2 py-0.5 rounded ${
-                          r.role === "super_admin" ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-                        }`}>
-                          {r.role === "super_admin" ? "Super Admin" : "Admin"}
-                        </span>
-                      </div>
-                      {r.user_id !== user?.id && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleRemoveAdmin(r.email)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
+          {/* ADMINS TAB */}
+          <TabsContent value="admins">
+            <div className="space-y-4">
+              <h2 className="font-display text-xl font-bold">Administradores</h2>
+              {adminUsers.length === 0 ? (
+                <p className="font-body text-muted-foreground">Nenhum admin.</p>
+              ) : (
+                <div className="overflow-x-auto bg-card rounded-xl border border-border">
+                  <table className="w-full font-body text-sm">
+                    <thead><tr className="border-b border-border text-left"><th className="p-2">Nome</th><th className="p-2">Email</th><th className="p-2">Tipo</th><th className="p-2">Ações</th></tr></thead>
+                    <tbody>
+                      {adminUsers.map(u => (
+                        <tr key={u.id} className="border-b border-border/50">
+                          <td className="p-2 font-semibold">{u.display_name}</td>
+                          <td className="p-2">{u.email}</td>
+                          <td className="p-2">
+                            <span className={`text-xs px-2 py-0.5 rounded ${u.admin_role === "super_admin" ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                              {u.admin_role === "super_admin" ? "Super Admin" : "Admin"}
+                            </span>
+                          </td>
+                          <td className="p-2">
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="ghost" onClick={() => openEdit(u)}><Pencil className="w-3 h-3" /></Button>
+                              {u.id !== currentUser?.id && (
+                                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setDeleteUser(u)}><Trash2 className="w-3 h-3" /></Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit Dialog */}
+      <AlertDialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Editar Utilizador</AlertDialogTitle>
+            <AlertDialogDescription>Altere os dados e clique Guardar.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <label className="font-body text-sm font-medium block mb-1">Nome</label>
+              <Input value={editDisplayName} onChange={(e) => setEditDisplayName(e.target.value)} />
+            </div>
+            <div>
+              <label className="font-body text-sm font-medium block mb-1">Email</label>
+              <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+            </div>
+            <div>
+              <label className="font-body text-sm font-medium block mb-1">Nova Password (deixar vazio para não alterar)</label>
+              <Input type="text" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} placeholder="Nova password" />
+            </div>
+            <div>
+              <label className="font-body text-sm font-medium block mb-1">Papel Admin</label>
+              <Select value={editAdminRole} onValueChange={setEditAdminRole}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem papel admin</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="super_admin">Super Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSaveEdit}>Guardar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deleteUser} onOpenChange={(open) => !open && setDeleteUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar Utilizador</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem a certeza que deseja eliminar <strong>{deleteUser?.email}</strong>? Esta ação é irreversível.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
