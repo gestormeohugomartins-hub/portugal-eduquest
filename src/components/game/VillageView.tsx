@@ -520,6 +520,8 @@ export const VillageView = ({ student, onQuiz, onRefresh, onPremium }: VillageVi
         productionReady={productionReady}
         animatedCitizens={animatedCitizens}
         complaints={simState?.complaints || []}
+        studentId={student.id}
+        district={student.district}
         onTileClick={handleTileClick} onTileHover={handleTileHover} onBuildingClick={handleBuildingClick}
       />
 

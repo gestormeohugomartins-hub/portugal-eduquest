@@ -4,6 +4,7 @@ import { gridToIso, applyBuildingsToGrid } from '@/lib/gridLogic';
 import { BUILDING_SPRITES, getSpriteImage, preloadSprites } from '@/lib/sprites';
 import { updateParticles, drawParticles, addSmokeParticle, addSparkle, drawFlag, drawWaterShimmer } from '@/lib/canvasEffects';
 import { AnimatedCitizen, Complaint } from '@/lib/simulation';
+import { generateTerrain, drawTerrainElement, drawWildernessTile, getWildernessBorder, studentIdToSeed, TerrainElement } from '@/lib/terrainGeneration';
 
 interface IsometricCanvasProps {
   grid: GridTile[][];
@@ -15,6 +16,8 @@ interface IsometricCanvasProps {
   productionReady: Set<string>;
   animatedCitizens: AnimatedCitizen[];
   complaints: Complaint[];
+  studentId?: string;
+  district?: string | null;
   onTileClick: (gx: number, gy: number) => void;
   onTileHover: (gx: number, gy: number) => void;
   onBuildingClick: (building: PlacedBuilding) => void;
@@ -28,7 +31,8 @@ const FARM_COLORS = ['#6b8e23', '#7a9e32', '#5a7e13'];
 
 export const IsometricCanvas = ({
   grid, buildings, gridSize, selectedBuilding, ghostPos, canPlaceGhost,
-  productionReady, animatedCitizens, complaints, onTileClick, onTileHover, onBuildingClick,
+  productionReady, animatedCitizens, complaints, studentId, district,
+  onTileClick, onTileHover, onBuildingClick,
 }: IsometricCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [camera, setCamera] = useState({ x: 0, y: 0 });
@@ -42,6 +46,13 @@ export const IsometricCanvas = ({
 
   const fullGrid = useMemo(() => applyBuildingsToGrid(grid, buildings), [grid, buildings]);
 
+  // Generate terrain elements (deterministic based on student id)
+  const terrainElements = useMemo(() => {
+    const seed = studentId ? studentIdToSeed(studentId) : 12345;
+    return generateTerrain({ district, gridSize, seed });
+  }, [studentId, district, gridSize]);
+
+  const wildernessBorder = getWildernessBorder();
   const originX = (gridSize * TILE_W) / 2;
   const originY = 50;
 
@@ -113,7 +124,7 @@ export const IsometricCanvas = ({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#1a3010';
+    ctx.fillStyle = '#0e200a';
     ctx.fillRect(0, 0, w, h);
 
     ctx.save();
@@ -123,7 +134,33 @@ export const IsometricCanvas = ({
 
     const time = timeRef.current;
 
-    // Draw tiles
+    // Pre-compute water tile positions
+    const waterTileSet = new Set<string>();
+    for (const el of terrainElements) {
+      if (el.type === 'river_tile' || el.type === 'lake_tile') {
+        waterTileSet.add(`${Math.floor(el.gx)},${Math.floor(el.gy)}`);
+      }
+    }
+
+    // Draw wilderness tiles (outside village grid)
+    const wb = wildernessBorder;
+    for (let y = -wb; y < gridSize + wb; y++) {
+      for (let x = -wb; x < gridSize + wb; x++) {
+        if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) continue;
+        if (!waterTileSet.has(`${x},${y}`)) {
+          drawWildernessTile(ctx, x, y, TILE_W, TILE_H, gridSize);
+        }
+      }
+    }
+
+    // Draw water terrain elements (tiles) first
+    for (const el of terrainElements) {
+      if (el.type === 'river_tile' || el.type === 'lake_tile') {
+        drawTerrainElement(ctx, el, TILE_W, TILE_H, time);
+      }
+    }
+
+    // Draw village tiles
     for (let y = 0; y < gridSize; y++) {
       for (let x = 0; x < gridSize; x++) {
         const tile = fullGrid[y]?.[x];
@@ -131,6 +168,14 @@ export const IsometricCanvas = ({
         const { sx, sy } = gridToIso(x, y, TILE_W, TILE_H);
         drawIsoDiamond(ctx, sx, sy, tile.type, x, y, tile.buildingId, buildings);
       }
+    }
+
+    // Draw terrain elements (sorted by depth for proper overlap)
+    const sortedTerrain = terrainElements
+      .filter(el => el.type !== 'river_tile' && el.type !== 'lake_tile')
+      .sort((a, b) => (a.gx + a.gy) - (b.gx + b.gy));
+    for (const el of sortedTerrain) {
+      drawTerrainElement(ctx, el, TILE_W, TILE_H, time);
     }
 
     // Draw ghost
