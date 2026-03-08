@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { validatePassword } from "@/lib/passwordValidation";
+import { PasswordInput } from "@/components/PasswordInput";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { signInWithGoogle } from "@/lib/googleAuth";
