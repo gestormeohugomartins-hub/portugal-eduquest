@@ -22,30 +22,71 @@ const svgIdToKey: Record<string, string> = {
   'D_Faro': 'faro',
 };
 
-// Label positions (approximate centroids in the original SVG coordinate space)
-// These are in the coordinate system AFTER the translate(-65,0) transform
-export const districtLabels: Record<string, { label: string; x: number; y: number }> = {
-  viana_castelo: { label: "V. Castelo", x: 62, y: 20 },
-  braga: { label: "Braga", x: 78, y: 38 },
-  vila_real: { label: "Vila Real", x: 100, y: 32 },
-  braganca: { label: "Bragança", x: 140, y: 30 },
-  porto: { label: "Porto", x: 68, y: 56 },
-  aveiro: { label: "Aveiro", x: 58, y: 82 },
-  viseu: { label: "Viseu", x: 100, y: 70 },
-  guarda: { label: "Guarda", x: 130, y: 82 },
-  coimbra: { label: "Coimbra", x: 73, y: 105 },
-  castelo_branco: { label: "C. Branco", x: 115, y: 118 },
-  leiria: { label: "Leiria", x: 52, y: 130 },
-  santarem: { label: "Santarém", x: 82, y: 155 },
-  portalegre: { label: "Portalegre", x: 130, y: 150 },
-  lisboa: { label: "Lisboa", x: 38, y: 175 },
-  setubal: { label: "Setúbal", x: 55, y: 210 },
-  evora: { label: "Évora", x: 105, y: 195 },
-  beja: { label: "Beja", x: 98, y: 240 },
-  faro: { label: "Faro", x: 100, y: 285 },
-  acores: { label: "Açores", x: -155, y: 75 },
-  madeira: { label: "Madeira", x: -155, y: 210 },
+// Human-readable labels for each district
+export const districtLabelNames: Record<string, string> = {
+  viana_castelo: "V. Castelo",
+  braga: "Braga",
+  vila_real: "Vila Real",
+  braganca: "Bragança",
+  porto: "Porto",
+  aveiro: "Aveiro",
+  viseu: "Viseu",
+  guarda: "Guarda",
+  coimbra: "Coimbra",
+  castelo_branco: "C. Branco",
+  leiria: "Leiria",
+  santarem: "Santarém",
+  portalegre: "Portalegre",
+  lisboa: "Lisboa",
+  setubal: "Setúbal",
+  evora: "Évora",
+  beja: "Beja",
+  faro: "Faro",
+  acores: "Açores",
+  madeira: "Madeira",
 };
+
+// Hardcoded island label positions (not in mainland SVG)
+const islandLabelPositions: Record<string, { x: number; y: number }> = {
+  acores: { x: -155, y: 68 },
+  madeira: { x: -155, y: 210 },
+};
+
+// Compute approximate centroid from an SVG path 'd' attribute
+function computeCentroid(d: string): { x: number; y: number } {
+  const nums: number[] = [];
+  // Extract all numbers from the path
+  const regex = /-?\d+\.?\d*/g;
+  let match;
+  while ((match = regex.exec(d)) !== null) {
+    nums.push(parseFloat(match[0]));
+  }
+  if (nums.length < 2) return { x: 0, y: 0 };
+  let sumX = 0, sumY = 0, count = 0;
+  for (let i = 0; i < nums.length - 1; i += 2) {
+    sumX += nums[i];
+    sumY += nums[i + 1];
+    count++;
+  }
+  return { x: sumX / count, y: sumY / count };
+}
+
+// Cached computed labels
+let _districtLabels: Record<string, { label: string; x: number; y: number }> | null = null;
+
+export function getDistrictLabels(paths: Record<string, string>): Record<string, { label: string; x: number; y: number }> {
+  if (_districtLabels) return _districtLabels;
+  _districtLabels = {};
+  for (const [key, label] of Object.entries(districtLabelNames)) {
+    if (key === 'acores' || key === 'madeira') {
+      _districtLabels[key] = { label, ...islandLabelPositions[key] };
+    } else if (paths[key]) {
+      const c = computeCentroid(paths[key]);
+      _districtLabels[key] = { label, x: c.x, y: c.y };
+    }
+  }
+  return _districtLabels;
+}
 
 // Islands paths (manual, since they're not in the mainland SVG)
 export const islandPaths: Record<string, string> = {

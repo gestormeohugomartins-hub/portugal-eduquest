@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ZoomIn, ZoomOut, RotateCcw, Users, MapPin } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Users, MapPin, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getDistrictPaths, districtLabels } from '@/lib/portugalMapUtils';
+import { Input } from '@/components/ui/input';
+import { getDistrictPaths, getDistrictLabels, districtLabelNames } from '@/lib/portugalMapUtils';
 
 interface PlayerInDistrict {
   district: string;
@@ -15,10 +16,6 @@ interface PortugalMapProps {
   district?: string | null;
 }
 
-// The original SVG group has transform="translate(-65,0)" and viewBox "0 0 190 366.667"
-// Mainland paths are in coordinate space ~75-245 x, 5-360 y
-// After translate(-65,0), they render at ~10-180 x, 5-360 y
-// We'll use a viewBox that places islands on the left and mainland on the right
 const VIEWBOX = "-220 -10 420 400";
 const MAINLAND_TRANSFORM = "translate(-65, 0)";
 
@@ -34,8 +31,12 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
   const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [lastTouchDist, setLastTouchDist] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const districtPaths = useMemo(() => getDistrictPaths(), []);
+  const districtLabels = useMemo(() => getDistrictLabels(districtPaths), [districtPaths]);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -58,6 +59,40 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
     };
     fetchPlayers();
   }, []);
+
+  // Search: find players matching query
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim() || searchQuery.length < 2) return [];
+    const q = searchQuery.toLowerCase();
+    const results: { player: { id: string; display_name: string; nickname: string | null; village_level: number; xp: number }; district: string }[] = [];
+    for (const [district, data] of Object.entries(districtData)) {
+      for (const player of data.players) {
+        if (
+          player.display_name.toLowerCase().includes(q) ||
+          (player.nickname && player.nickname.toLowerCase().includes(q))
+        ) {
+          results.push({ player, district });
+        }
+      }
+    }
+    return results.slice(0, 10);
+  }, [searchQuery, districtData]);
+
+  const handleSelectSearchResult = (district: string) => {
+    setSelectedDistrict(district);
+    const info = districtLabels[district];
+    if (info) {
+      const isIslandKey = district === 'acores' || district === 'madeira';
+      // For mainland labels, centroid is in the original SVG coord space (before translate(-65,0))
+      // so the rendered x = centroid.x - 65. We need to pan to center that.
+      const renderX = isIslandKey ? info.x : info.x - 65;
+      const renderY = info.y;
+      setZoom(2.5);
+      setPan({ x: -renderX, y: -(renderY - 180) });
+    }
+    setSearchOpen(false);
+    setSearchQuery('');
+  };
 
   const totalPlayers = useMemo(() => Object.values(districtData).reduce((sum, d) => sum + d.count, 0), [districtData]);
 
@@ -116,8 +151,10 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
     if (selectedDistrict === key) {
       const info = districtLabels[key];
       if (info) {
+        const isIslandKey = key === 'acores' || key === 'madeira';
+        const renderX = isIslandKey ? info.x : info.x - 65;
         setZoom(2.5);
-        setPan({ x: -(info.x - 0), y: -(info.y - 180) });
+        setPan({ x: -renderX, y: -(info.y - 180) });
       }
     } else {
       setSelectedDistrict(key);
@@ -127,6 +164,10 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
   const isIsland = (key: string) => key === 'acores' || key === 'madeira';
   const showPlayerCount = zoom >= 1.2;
   const showPlayerNames = zoom >= 2.5;
+
+  // For mainland labels, the centroid is in the original SVG coordinate space.
+  // Since labels are inside a <g transform="translate(-65,0)">, we use the raw centroid x,y directly.
+  // (The translate is applied by the parent <g>.)
 
   return (
     <div className="px-2 h-[calc(100vh-10rem)] flex flex-col">
@@ -139,11 +180,62 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
           </p>
         </div>
         <div className="flex gap-1">
+          <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => { setSearchOpen(!searchOpen); setTimeout(() => searchInputRef.current?.focus(), 100); }}>
+            <Search className="w-4 h-4" />
+          </Button>
           <Button size="icon" variant="outline" className="h-8 w-8" onClick={handleZoomIn}><ZoomIn className="w-4 h-4" /></Button>
           <Button size="icon" variant="outline" className="h-8 w-8" onClick={handleZoomOut}><ZoomOut className="w-4 h-4" /></Button>
           <Button size="icon" variant="outline" className="h-8 w-8" onClick={handleReset}><RotateCcw className="w-4 h-4" /></Button>
         </div>
       </div>
+
+      {/* Search Bar */}
+      {searchOpen && (
+        <div className="relative mb-2 animate-fade-in">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              ref={searchInputRef}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Procurar jogador por nome..."
+              className="pl-8 pr-8 h-9 text-sm"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+              </button>
+            )}
+          </div>
+          {searchResults.length > 0 && (
+            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+              {searchResults.map(({ player, district }) => (
+                <button
+                  key={player.id}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-muted/50 transition-colors text-left"
+                  onClick={() => handleSelectSearchResult(district)}
+                >
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <div>
+                      <span className="font-semibold">{player.nickname || player.display_name}</span>
+                      {player.nickname && <span className="text-muted-foreground ml-1">({player.display_name})</span>}
+                    </div>
+                  </div>
+                  <span className="text-muted-foreground shrink-0 ml-2">
+                    {districtLabelNames[district] || district} • Nv.{player.village_level}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+          {searchQuery.length >= 2 && searchResults.length === 0 && (
+            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg px-3 py-3 text-xs text-muted-foreground text-center">
+              Nenhum jogador encontrado
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Map Container */}
       <div
@@ -227,7 +319,7 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
             <path key={i} d={`M-220,${y} Q-70,${y + (i % 2 ? 6 : -6)} 80,${y} Q150,${y + (i % 2 ? -6 : 6)} 200,${y}`} fill="none" stroke="hsl(210, 40%, 30%)" strokeWidth="0.4" opacity="0.4" />
           ))}
 
-          {/* Separator between islands and mainland */}
+          {/* Separator */}
           <line x1="-45" y1="-5" x2="-45" y2="385" stroke="hsl(210, 30%, 35%)" strokeWidth="0.6" strokeDasharray="4,3" opacity="0.5" />
           <text x="-40" y="200" fill="hsl(210, 30%, 50%)" fontSize="7" fontStyle="italic" opacity="0.6" transform="rotate(90, -40, 200)">Oceano Atlântico</text>
 
@@ -235,45 +327,18 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
           <text x="-155" y="32" textAnchor="middle" fill="hsl(45, 60%, 70%)" fontSize="8" fontWeight="bold" opacity="0.8">Açores</text>
           <text x="-155" y="175" textAnchor="middle" fill="hsl(45, 60%, 70%)" fontSize="8" fontWeight="bold" opacity="0.8">Madeira</text>
 
-          {/* Mainland districts (using real SVG paths with original transform) */}
+          {/* Mainland districts */}
           <g transform={MAINLAND_TRANSFORM}>
             {Object.entries(districtPaths).filter(([key]) => !isIsland(key)).map(([key, pathD]) => {
               const isSelected = selectedDistrict === key;
               const isMine = myDistrict === key;
-              const isHovered = hoveredDistrict === key;
               const count = districtData[key]?.count || 0;
               const intensity = Math.min(1, count / 10);
-
-              const fillColor = isSelected
-                ? 'hsl(140, 55%, 42%)'
-                : isMine
-                  ? 'hsl(45, 70%, 45%)'
-                  : count > 0
-                    ? `hsl(140, ${25 + intensity * 35}%, ${28 + intensity * 15}%)`
-                    : 'hsl(140, 15%, 25%)';
-
+              const fillColor = isSelected ? 'hsl(140, 55%, 42%)' : isMine ? 'hsl(45, 70%, 45%)' : count > 0 ? `hsl(140, ${25 + intensity * 35}%, ${28 + intensity * 15}%)` : 'hsl(140, 15%, 25%)';
               const strokeColor = isSelected ? 'hsl(45, 90%, 65%)' : isMine ? 'hsl(45, 80%, 55%)' : 'hsl(140, 25%, 40%)';
-
-              const classNames = [
-                'district-path',
-                isSelected ? 'district-selected district-selected-pulse' : '',
-                !isSelected && isMine ? 'district-mine' : '',
-              ].filter(Boolean).join(' ');
-
+              const classNames = ['district-path', isSelected ? 'district-selected district-selected-pulse' : '', !isSelected && isMine ? 'district-mine' : ''].filter(Boolean).join(' ');
               return (
-                <path
-                  key={key}
-                  d={pathD}
-                  fill={fillColor}
-                  stroke={strokeColor}
-                  strokeWidth={isSelected ? 1.5 : isMine ? 0.8 : 0.25}
-                  strokeLinejoin="round"
-                  opacity={isSelected ? 1 : selectedDistrict && !isSelected ? 0.55 : 0.92}
-                  className={classNames}
-                  onClick={() => handleDistrictClick(key)}
-                  onMouseEnter={() => setHoveredDistrict(key)}
-                  onMouseLeave={() => setHoveredDistrict(null)}
-                />
+                <path key={key} d={pathD} fill={fillColor} stroke={strokeColor} strokeWidth={isSelected ? 1.5 : isMine ? 0.8 : 0.25} strokeLinejoin="round" opacity={isSelected ? 1 : selectedDistrict && !isSelected ? 0.55 : 0.92} className={classNames} onClick={() => handleDistrictClick(key)} onMouseEnter={() => setHoveredDistrict(key)} onMouseLeave={() => setHoveredDistrict(null)} />
               );
             })}
           </g>
@@ -284,73 +349,29 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
             const isMine = myDistrict === key;
             const count = districtData[key]?.count || 0;
             const intensity = Math.min(1, count / 10);
-
-            const fillColor = isSelected
-              ? 'hsl(140, 55%, 42%)'
-              : isMine
-                ? 'hsl(45, 70%, 45%)'
-                : count > 0
-                  ? `hsl(140, ${25 + intensity * 35}%, ${28 + intensity * 15}%)`
-                  : 'hsl(140, 15%, 25%)';
-
+            const fillColor = isSelected ? 'hsl(140, 55%, 42%)' : isMine ? 'hsl(45, 70%, 45%)' : count > 0 ? `hsl(140, ${25 + intensity * 35}%, ${28 + intensity * 15}%)` : 'hsl(140, 15%, 25%)';
             const strokeColor = isSelected ? 'hsl(45, 90%, 65%)' : isMine ? 'hsl(45, 80%, 55%)' : 'hsl(140, 25%, 40%)';
-
             return (
-              <path
-                key={key}
-                d={pathD}
-                fill={fillColor}
-                stroke={strokeColor}
-                strokeWidth={isSelected ? 1 : 0.5}
-                strokeLinejoin="round"
-                opacity={isSelected ? 1 : selectedDistrict && !isSelected ? 0.55 : 0.92}
-                className={`district-path ${isSelected ? 'district-selected district-selected-pulse' : ''} ${!isSelected && isMine ? 'district-mine' : ''}`}
-                onClick={() => handleDistrictClick(key)}
-                onMouseEnter={() => setHoveredDistrict(key)}
-                onMouseLeave={() => setHoveredDistrict(null)}
-              />
+              <path key={key} d={pathD} fill={fillColor} stroke={strokeColor} strokeWidth={isSelected ? 1 : 0.5} strokeLinejoin="round" opacity={isSelected ? 1 : selectedDistrict && !isSelected ? 0.55 : 0.92} className={`district-path ${isSelected ? 'district-selected district-selected-pulse' : ''} ${!isSelected && isMine ? 'district-mine' : ''}`} onClick={() => handleDistrictClick(key)} onMouseEnter={() => setHoveredDistrict(key)} onMouseLeave={() => setHoveredDistrict(null)} />
             );
           })}
 
-          {/* District labels */}
+          {/* Mainland district labels (auto-centered from path centroids) */}
           <g transform={MAINLAND_TRANSFORM}>
             {Object.entries(districtLabels).filter(([key]) => !isIsland(key)).map(([key, info]) => {
               const isSelected = selectedDistrict === key;
               const isMine = myDistrict === key;
               if (!(zoom >= 1.2 || isSelected || isMine)) return null;
               const count = districtData[key]?.count || 0;
-
-              // Offset to roughly match the translate(-65) paths
-              const lx = info.x + 65;
-              const ly = info.y;
-
               return (
                 <g key={key}>
-                  <text
-                    x={lx} y={ly}
-                    textAnchor="middle"
-                    fill={isSelected ? 'hsl(45, 90%, 85%)' : isMine ? 'hsl(45, 80%, 75%)' : 'hsl(140, 20%, 75%)'}
-                    fontSize={isSelected ? 8 : 6}
-                    fontWeight={isSelected || isMine ? 'bold' : 'normal'}
-                    className="district-label"
-                    style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}
-                  >
+                  <text x={info.x} y={info.y} textAnchor="middle" dominantBaseline="central" fill={isSelected ? 'hsl(45, 90%, 85%)' : isMine ? 'hsl(45, 80%, 75%)' : 'hsl(140, 20%, 75%)'} fontSize={isSelected ? 8 : 6} fontWeight={isSelected || isMine ? 'bold' : 'normal'} className="district-label" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>
                     {info.label}
                   </text>
                   {count > 0 && (showPlayerCount || isSelected) && (
                     <g className={isSelected ? 'badge-pop' : ''}>
-                      <rect
-                        x={lx + 12} y={ly - 10}
-                        width={count >= 100 ? 20 : count >= 10 ? 16 : 12}
-                        height={10} rx={5}
-                        fill={isSelected ? 'hsl(45, 90%, 55%)' : 'hsl(45, 80%, 50%)'}
-                        stroke="hsl(45, 60%, 30%)" strokeWidth="0.3"
-                      />
-                      <text
-                        x={lx + 12 + (count >= 100 ? 10 : count >= 10 ? 8 : 6)}
-                        y={ly - 2.5}
-                        textAnchor="middle" fill="hsl(45, 10%, 10%)" fontSize="6" fontWeight="bold"
-                      >{count}</text>
+                      <rect x={info.x + 12} y={info.y - 5} width={count >= 100 ? 20 : count >= 10 ? 16 : 12} height={10} rx={5} fill={isSelected ? 'hsl(45, 90%, 55%)' : 'hsl(45, 80%, 50%)'} stroke="hsl(45, 60%, 30%)" strokeWidth="0.3" />
+                      <text x={info.x + 12 + (count >= 100 ? 10 : count >= 10 ? 8 : 6)} y={info.y + 2} textAnchor="middle" fill="hsl(45, 10%, 10%)" fontSize="6" fontWeight="bold">{count}</text>
                     </g>
                   )}
                 </g>
@@ -364,34 +385,15 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
             const isMine = myDistrict === key;
             if (!(zoom >= 1.2 || isSelected || isMine)) return null;
             const count = districtData[key]?.count || 0;
-
             return (
               <g key={key}>
-                <text
-                  x={info.x} y={info.y}
-                  textAnchor="middle"
-                  fill={isSelected ? 'hsl(45, 90%, 85%)' : isMine ? 'hsl(45, 80%, 75%)' : 'hsl(140, 20%, 75%)'}
-                  fontSize={isSelected ? 8 : 6}
-                  fontWeight={isSelected || isMine ? 'bold' : 'normal'}
-                  className="district-label"
-                  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}
-                >
+                <text x={info.x} y={info.y} textAnchor="middle" dominantBaseline="central" fill={isSelected ? 'hsl(45, 90%, 85%)' : isMine ? 'hsl(45, 80%, 75%)' : 'hsl(140, 20%, 75%)'} fontSize={isSelected ? 8 : 6} fontWeight={isSelected || isMine ? 'bold' : 'normal'} className="district-label" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>
                   {info.label}
                 </text>
                 {count > 0 && (showPlayerCount || isSelected) && (
                   <g className={isSelected ? 'badge-pop' : ''}>
-                    <rect
-                      x={info.x + 12} y={info.y - 10}
-                      width={count >= 100 ? 20 : count >= 10 ? 16 : 12}
-                      height={10} rx={5}
-                      fill={isSelected ? 'hsl(45, 90%, 55%)' : 'hsl(45, 80%, 50%)'}
-                      stroke="hsl(45, 60%, 30%)" strokeWidth="0.3"
-                    />
-                    <text
-                      x={info.x + 12 + (count >= 100 ? 10 : count >= 10 ? 8 : 6)}
-                      y={info.y - 2.5}
-                      textAnchor="middle" fill="hsl(45, 10%, 10%)" fontSize="6" fontWeight="bold"
-                    >{count}</text>
+                    <rect x={info.x + 12} y={info.y - 5} width={count >= 100 ? 20 : count >= 10 ? 16 : 12} height={10} rx={5} fill={isSelected ? 'hsl(45, 90%, 55%)' : 'hsl(45, 80%, 50%)'} stroke="hsl(45, 60%, 30%)" strokeWidth="0.3" />
+                    <text x={info.x + 12 + (count >= 100 ? 10 : count >= 10 ? 8 : 6)} y={info.y + 2} textAnchor="middle" fill="hsl(45, 10%, 10%)" fontSize="6" fontWeight="bold">{count}</text>
                   </g>
                 )}
               </g>
@@ -402,13 +404,11 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
           <g transform={MAINLAND_TRANSFORM}>
             {showPlayerNames && Object.entries(districtLabels).filter(([key]) => !isIsland(key) && districtData[key]).map(([key, info]) => {
               const playerData = districtData[key];
-              const lx = info.x + 65;
-              const ly = info.y;
               return playerData.players.slice(0, 15).map((player, i) => {
                 const angle = (i / Math.max(1, playerData.players.length)) * Math.PI * 2;
                 const radius = 10 + (i % 3) * 5;
-                const px = lx + Math.cos(angle) * radius;
-                const py = ly + Math.sin(angle) * radius;
+                const px = info.x + Math.cos(angle) * radius;
+                const py = info.y + Math.sin(angle) * radius;
                 const isMe = player.id === studentId;
                 return (
                   <g key={player.id}>
@@ -425,7 +425,7 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
           </g>
         </svg>
 
-        {/* Mini-map (visible when zoom >= 2) */}
+        {/* Mini-map */}
         {zoom >= 2 && (
           <div className="absolute top-2 right-2 w-24 h-32 bg-card/70 backdrop-blur-sm rounded-lg border border-border overflow-hidden">
             <svg viewBox={VIEWBOX} className="w-full h-full">
@@ -438,18 +438,7 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
               {Object.entries(districtPaths).filter(([key]) => isIsland(key)).map(([key, pathD]) => (
                 <path key={key} d={pathD} fill="hsl(140, 20%, 30%)" stroke="hsl(140, 25%, 40%)" strokeWidth="0.2" />
               ))}
-              {/* Viewport indicator */}
-              <rect
-                x={-pan.x - 210 / zoom}
-                y={-pan.y - 200 / zoom}
-                width={420 / zoom}
-                height={400 / zoom}
-                fill="none"
-                stroke="hsl(45, 90%, 60%)"
-                strokeWidth={1.5}
-                rx={2}
-                opacity={0.8}
-              />
+              <rect x={-pan.x - 210 / zoom} y={-pan.y - 200 / zoom} width={420 / zoom} height={400 / zoom} fill="none" stroke="hsl(45, 90%, 60%)" strokeWidth={1.5} rx={2} opacity={0.8} />
             </svg>
           </div>
         )}
@@ -512,11 +501,7 @@ export const PortugalMap = ({ studentId, district: myDistrict }: PortugalMapProp
           {districtData[selectedDistrict]?.players.length ? (
             <div className="space-y-1">
               {districtData[selectedDistrict].players.slice(0, 10).map((player, i) => (
-                <div
-                  key={player.id}
-                  className={`flex items-center justify-between text-xs font-body px-2 py-1 rounded animate-fade-in ${player.id === studentId ? 'bg-gold/10 border border-gold/30' : 'bg-muted/30'}`}
-                  style={{ animationDelay: `${i * 50}ms` }}
-                >
+                <div key={player.id} className={`flex items-center justify-between text-xs font-body px-2 py-1 rounded animate-fade-in ${player.id === studentId ? 'bg-gold/10 border border-gold/30' : 'bg-muted/30'}`} style={{ animationDelay: `${i * 50}ms` }}>
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground font-bold w-4">#{i + 1}</span>
                     <span className="font-semibold">{player.nickname || player.display_name}{player.id === studentId && ' (Tu)'}</span>
