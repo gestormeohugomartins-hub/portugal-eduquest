@@ -534,6 +534,7 @@ export const VillageView = ({ student, onQuiz, onRefresh, onPremium }: VillageVi
         studentId={student.id}
         district={student.district}
         onTileClick={handleTileClick} onTileHover={handleTileHover} onBuildingClick={handleBuildingClick}
+        onTerrainClick={handleTerrainClick}
       />
 
       {/* Tutorial */}
