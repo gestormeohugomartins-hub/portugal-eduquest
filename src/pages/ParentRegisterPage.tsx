@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
+// Logo alt text: Questeduca
 
 const districts = [
   { value: "aveiro", label: "Aveiro" }, { value: "beja", label: "Beja" },
@@ -104,7 +105,7 @@ const ParentRegisterPage = () => {
     <div className="min-h-screen flex items-center justify-center px-4 py-8 parchment-bg">
       <div className="w-full max-w-lg game-border p-8 bg-card">
         <div className="text-center mb-6">
-          <img src={logo} alt="EduQuest" className="w-24 mx-auto mb-3" />
+          <img src={logo} alt="Questeduca" className="w-24 mx-auto mb-3" />
           <h1 className="font-display text-2xl font-bold">Registo de Pai/Enc. Educação</h1>
           <p className="font-body text-sm text-muted-foreground mt-1">
             Registe-se para que os seus educandos possam jogar

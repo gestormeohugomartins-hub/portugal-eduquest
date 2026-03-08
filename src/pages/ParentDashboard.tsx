@@ -55,7 +55,7 @@ const ParentDashboard = () => {
       <div className="bg-card border-b-2 border-border px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="EduQuest" className="w-10 h-10" />
+            <img src={logo} alt="Questeduca" className="w-10 h-10" />
             <div>
               <h1 className="font-display text-lg font-bold">Painel Parental</h1>
               <p className="font-body text-xs text-muted-foreground">{profile?.display_name}</p>

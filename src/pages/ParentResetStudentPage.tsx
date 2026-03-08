@@ -138,7 +138,7 @@ const ParentResetStudentPage = () => {
     <div className="min-h-screen flex items-center justify-center px-4 parchment-bg">
       <div className="w-full max-w-md game-border p-8 bg-card">
         <div className="text-center mb-6">
-          <img src={logo} alt="EduQuest" className="w-24 mx-auto mb-3" />
+          <img src={logo} alt="Questeduca" className="w-24 mx-auto mb-3" />
           <h1 className="font-display text-2xl font-bold">Autorizar Recuperação</h1>
           <p className="font-body text-sm text-muted-foreground mt-2">
             O aluno <strong>{studentName}</strong> pediu para recuperar a palavra-passe

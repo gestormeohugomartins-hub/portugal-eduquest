@@ -10,7 +10,7 @@ const RegisterPage = () => {
     <div className="min-h-screen flex items-center justify-center px-4 parchment-bg">
       <div className="w-full max-w-md game-border p-8 bg-card">
         <div className="text-center mb-8">
-          <img src={logo} alt="EduQuest" className="w-32 mx-auto mb-4" />
+          <img src={logo} alt="Questeduca" className="w-32 mx-auto mb-4" />
           <h1 className="font-display text-2xl font-bold">Criar Conta</h1>
           <p className="font-body text-sm text-muted-foreground mt-2">
             Escolhe o tipo de conta que queres criar

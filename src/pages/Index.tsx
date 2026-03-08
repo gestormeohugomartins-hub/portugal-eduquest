@@ -18,7 +18,7 @@ const Index = () => {
         <div className="relative z-10 flex flex-col items-center justify-center min-h-[80vh] px-4">
           <img 
             src={logo} 
-            alt="EduQuest Portugal" 
+            alt="Questeduca" 
             className="w-64 md:w-80 mb-8 animate-float drop-shadow-2xl"
           />
           <h1 className="font-display text-3xl md:text-5xl font-bold text-foreground text-center mb-4 text-shadow-game">
@@ -96,7 +96,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="py-6 px-4 text-center">
         <p className="font-body text-sm text-muted-foreground">
-          EduQuest Portugal © 2026 — Jogo educativo para o 1º Ciclo do Ensino Básico
+          Questeduca © 2026 — Jogo educativo para o 1º Ciclo do Ensino Básico
         </p>
       </footer>
     </div>
