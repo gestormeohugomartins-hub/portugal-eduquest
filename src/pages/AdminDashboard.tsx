@@ -19,6 +19,7 @@ interface AdminUser {
   created_at: string;
   banned: boolean;
   banned_until: string | null;
+  email_confirmed: boolean;
   display_name: string;
   app_role: string | null;
   admin_role: string | null;
