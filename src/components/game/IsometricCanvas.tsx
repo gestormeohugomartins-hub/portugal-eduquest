@@ -16,6 +16,8 @@ interface IsometricCanvasProps {
   productionReady: Set<string>;
   animatedCitizens: AnimatedCitizen[];
   complaints: Complaint[];
+  studentId?: string;
+  district?: string | null;
   onTileClick: (gx: number, gy: number) => void;
   onTileHover: (gx: number, gy: number) => void;
   onBuildingClick: (building: PlacedBuilding) => void;
