@@ -51,10 +51,10 @@ export function useResources(studentId: string | undefined) {
   useEffect(() => {
     if (!studentId) return;
     const load = async () => {
-      const { data } = await supabase
-        .from('player_resources')
+      const { data } = await (supabase
+        .from('player_resources' as any)
         .select('resource_type, amount')
-        .eq('student_id', studentId);
+        .eq('student_id', studentId)) as any;
 
       if (data) {
         const r = { ...DEFAULT_RESOURCES };
