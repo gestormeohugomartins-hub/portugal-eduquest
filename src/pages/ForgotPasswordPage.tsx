@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sendEmail, emailTemplates } from "@/lib/email";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,49 +20,85 @@ const ForgotPasswordPage = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Check if this email belongs to a student
-    const { data: student } = await supabase
-      .from("students")
-      .select("id, parent_id, display_name")
-      .eq("user_id", (
-        await supabase.from("profiles").select("user_id").eq("email", email.toLowerCase().trim()).single()
-      ).data?.user_id || "")
-      .single();
-
-    if (student) {
-      // Student - get parent email and notify them
-      const { data: parentProfile } = await supabase
+    try {
+      // First, find the profile by email
+      const { data: profile } = await supabase
         .from("profiles")
-        .select("email, display_name")
-        .eq("user_id", student.parent_id)
+        .select("user_id, display_name")
+        .eq("email", email.toLowerCase().trim())
         .single();
 
-      if (parentProfile) {
-        // For students, we send the reset to parent's email
-        const { error } = await supabase.auth.resetPasswordForEmail(parentProfile.email, {
-          redirectTo: `${window.location.origin}/parent-reset-student?student_email=${encodeURIComponent(email)}`,
-        });
+      if (!profile) {
+        toast.error("Email não encontrado");
+        setLoading(false);
+        return;
+      }
 
-        if (error) {
-          toast.error("Erro ao enviar email: " + error.message);
-        } else {
+      // Check if this email belongs to a student
+      const { data: student } = await supabase
+        .from("students")
+        .select("id, parent_id, display_name")
+        .eq("user_id", profile.user_id)
+        .single();
+
+      if (student) {
+        // Student - get parent email and send notification to parent
+        const { data: parentProfile } = await supabase
+          .from("profiles")
+          .select("email, display_name")
+          .eq("user_id", student.parent_id)
+          .single();
+
+        if (parentProfile) {
+          // Generate a recovery token via Supabase (for the actual reset)
+          const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
+            redirectTo: `${window.location.origin}/reset-password`,
+          });
+
+          if (resetError) {
+            throw resetError;
+          }
+
+          // Send custom email to parent for authorization
+          const approveLink = `${window.location.origin}/parent-reset-student?student_email=${encodeURIComponent(email)}&student_name=${encodeURIComponent(student.display_name)}`;
+          const template = emailTemplates.parentStudentRecovery(student.display_name, approveLink);
+          
+          await sendEmail({
+            to: parentProfile.email,
+            subject: template.subject,
+            html: template.html,
+          });
+
           setIsStudent(true);
           setSent(true);
           toast.success("Email enviado ao encarregado de educação!");
         }
-      }
-    } else {
-      // Parent - direct password reset
-      const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) {
-        toast.error("Erro ao enviar email: " + error.message);
       } else {
+        // Parent - direct password reset with custom email
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+
+        if (resetError) {
+          throw resetError;
+        }
+
+        // Send custom branded recovery email
+        const resetLink = `${window.location.origin}/reset-password`;
+        const template = emailTemplates.passwordRecovery(resetLink);
+        
+        await sendEmail({
+          to: email.toLowerCase().trim(),
+          subject: template.subject,
+          html: template.html,
+        });
+
         setSent(true);
         toast.success("Email de recuperação enviado!");
       }
+    } catch (error: any) {
+      console.error("Recovery error:", error);
+      toast.error("Erro ao enviar email: " + (error.message || "Tenta novamente"));
     }
 
     setLoading(false);
