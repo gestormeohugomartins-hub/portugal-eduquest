@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sendEmail, emailTemplates } from "@/lib/email";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, Shield } from "lucide-react";
 import logo from "@/assets/logo.png";
@@ -12,13 +11,12 @@ const ParentResetStudentPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const studentEmail = searchParams.get("student_email") || "";
+  const studentNameParam = searchParams.get("student_name") || "";
   
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [authorized, setAuthorized] = useState(false);
-  const [studentName, setStudentName] = useState("");
+  const [studentName, setStudentName] = useState(studentNameParam);
 
   useEffect(() => {
     // Check if we have a valid parent session and they're the guardian
@@ -54,43 +52,46 @@ const ParentResetStudentPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (password !== confirmPassword) {
-      toast.error("As palavras-passe não coincidem");
-      return;
-    }
-    
-    if (password.length < 6) {
-      toast.error("A palavra-passe deve ter pelo menos 6 caracteres");
-      return;
-    }
-
     setLoading(true);
 
-    // Get student user ID
-    const { data: studentProfile } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .eq("email", studentEmail)
-      .single();
+    try {
+      // Get student user ID
+      const { data: studentProfile } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("email", studentEmail)
+        .single();
 
-    if (!studentProfile) {
-      toast.error("Aluno não encontrado");
-      setLoading(false);
-      return;
-    }
+      if (!studentProfile) {
+        toast.error("Aluno não encontrado");
+        setLoading(false);
+        return;
+      }
 
-    // Note: In production, this would use an admin function to update password
-    // For now we'll use a workaround by sending a magic link
-    const { error } = await supabase.auth.resetPasswordForEmail(studentEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+      // Trigger password reset via Supabase
+      const { error } = await supabase.auth.resetPasswordForEmail(studentEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
 
-    if (error) {
-      toast.error("Erro: " + error.message);
-    } else {
+      if (error) {
+        throw error;
+      }
+
+      // Send branded confirmation email to student
+      const resetLink = `${window.location.origin}/reset-password`;
+      const template = emailTemplates.studentRecoveryApproved(studentName, resetLink);
+      
+      await sendEmail({
+        to: studentEmail,
+        subject: template.subject,
+        html: template.html,
+      });
+
       setSuccess(true);
       toast.success("Email enviado ao aluno para definir nova palavra-passe!");
+    } catch (error: any) {
+      console.error("Reset error:", error);
+      toast.error("Erro: " + (error.message || "Tenta novamente"));
     }
 
     setLoading(false);
@@ -100,8 +101,8 @@ const ParentResetStudentPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 parchment-bg">
         <div className="w-full max-w-md game-border p-8 bg-card text-center">
-          <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-green-500" />
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-primary" />
           </div>
           <h1 className="font-display text-2xl font-bold mb-2">Autorização Concedida!</h1>
           <p className="font-body text-muted-foreground mb-6">
@@ -160,7 +161,7 @@ const ParentResetStudentPage = () => {
                 A processar...
               </>
             ) : (
-              "Autorizar Recuperação de Palavra-passe"
+              "✅ Autorizar Recuperação de Palavra-passe"
             )}
           </Button>
         </form>

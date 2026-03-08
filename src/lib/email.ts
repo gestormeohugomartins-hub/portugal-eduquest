@@ -99,6 +99,48 @@ export const emailTemplates = {
     `,
   }),
 
+  studentRecoveryApproved: (studentName: string, resetLink: string) => ({
+    subject: "✅ Recuperação Autorizada - Questeduca",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f5f0e6; margin: 0; padding: 20px;">
+        <div style="max-width: 500px; margin: 0 auto; background: #fff; border-radius: 12px; border: 3px solid #8b7355; overflow: hidden;">
+          <div style="background: linear-gradient(135deg, #c9a227 0%, #d4a726 100%); padding: 30px; text-align: center;">
+            <h1 style="color: #1a1a2e; margin: 0; font-size: 28px;">⚔️ Questeduca</h1>
+          </div>
+          <div style="padding: 30px;">
+            <h2 style="color: #1a1a2e; margin-top: 0;">Olá, ${studentName}! 🎉</h2>
+            <p style="color: #555; line-height: 1.6;">
+              Boas notícias! O teu encarregado de educação <strong>autorizou</strong> a recuperação da tua palavra-passe.
+            </p>
+            <p style="color: #555; line-height: 1.6;">
+              Clica no botão abaixo para criar uma nova palavra-passe:
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetLink}" style="display: inline-block; background: linear-gradient(135deg, #c9a227 0%, #d4a726 100%); color: #1a1a2e; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                🔑 Criar Nova Palavra-passe
+              </a>
+            </div>
+            <p style="color: #888; font-size: 13px;">
+              O link expira em 24 horas. Se tiveres problemas, pede ajuda ao teu encarregado de educação.
+            </p>
+          </div>
+          <div style="background: #f5f0e6; padding: 15px; text-align: center; border-top: 1px solid #ddd;">
+            <p style="color: #888; font-size: 12px; margin: 0;">
+              Questeduca © 2026 — Jogo educativo para o 1º Ciclo
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  }),
+
   welcome: (studentName: string) => ({
     subject: "🏰 Bem-vindo ao Questeduca!",
     html: `
