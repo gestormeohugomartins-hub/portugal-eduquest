@@ -861,6 +861,63 @@ export type Database = {
           },
         ]
       }
+      trade_offers: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          offer_coins: number
+          offer_food: number
+          receiver_id: string
+          request_coins: number
+          request_food: number
+          resolved_at: string | null
+          sender_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          offer_coins?: number
+          offer_food?: number
+          receiver_id: string
+          request_coins?: number
+          request_food?: number
+          resolved_at?: string | null
+          sender_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          offer_coins?: number
+          offer_food?: number
+          receiver_id?: string
+          request_coins?: number
+          request_food?: number
+          resolved_at?: string | null
+          sender_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_offers_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_offers_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
