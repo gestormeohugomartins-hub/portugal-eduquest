@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          coins_reward: number | null
+          created_at: string | null
+          description: string | null
+          diamonds_reward: number | null
+          icon: string | null
+          id: string
+          key: string
+          title: string
+          xp_reward: number | null
+        }
+        Insert: {
+          coins_reward?: number | null
+          created_at?: string | null
+          description?: string | null
+          diamonds_reward?: number | null
+          icon?: string | null
+          id?: string
+          key: string
+          title: string
+          xp_reward?: number | null
+        }
+        Update: {
+          coins_reward?: number | null
+          created_at?: string | null
+          description?: string | null
+          diamonds_reward?: number | null
+          icon?: string | null
+          id?: string
+          key?: string
+          title?: string
+          xp_reward?: number | null
+        }
+        Relationships: []
+      }
       association_donations: {
         Row: {
           amount: number
@@ -467,6 +503,42 @@ export type Database = {
           },
         ]
       }
+      player_achievements: {
+        Row: {
+          achievement_id: string
+          id: string
+          student_id: string
+          unlocked_at: string | null
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          student_id: string
+          unlocked_at?: string | null
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          student_id?: string
+          unlocked_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_achievements_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_inventory: {
         Row: {
           id: string
@@ -584,6 +656,48 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string | null
+          current_uses: number | null
+          discount_amount: number | null
+          discount_percent: number | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          target_user_id: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          current_uses?: number | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          target_user_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          current_uses?: number | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          target_user_id?: string | null
         }
         Relationships: []
       }
