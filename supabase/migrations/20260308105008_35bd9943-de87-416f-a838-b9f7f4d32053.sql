@@ -1,0 +1,1 @@
+ALTER TABLE public.authorized_emails ADD COLUMN school_year public.school_year DEFAULT '1';

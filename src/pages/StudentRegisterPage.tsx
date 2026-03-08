@@ -12,7 +12,7 @@ import logo from "@/assets/logo.png";
 const StudentRegisterPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: "", email: "", password: "", gender: "indefinido",
+    name: "", email: "", password: "", gender: "indefinido", schoolYear: "1",
   });
   const [loading, setLoading] = useState(false);
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "authorized" | "not_authorized">("idle");
@@ -36,6 +36,8 @@ const StudentRegisterPage = () => {
     if (data) {
       setEmailStatus("authorized");
       setAuthorizedEmail(data);
+      // Auto-fill school year from authorized email
+      setFormData(prev => ({ ...prev, schoolYear: data.school_year || "1" }));
     } else {
       setEmailStatus("not_authorized");
       setAuthorizedEmail(null);
@@ -82,12 +84,12 @@ const StudentRegisterPage = () => {
         .eq("user_id", authorizedEmail.parent_id)
         .single();
 
-      // Create student record with gender
+      // Create student record with gender and school year from authorized email
       await supabase.from("students").insert({
         user_id: data.user.id,
         parent_id: authorizedEmail.parent_id,
         display_name: formData.name,
-        school_year: "1" as any,
+        school_year: formData.schoolYear as any,
         district: parentProfile?.district as any,
         gender: formData.gender,
       });

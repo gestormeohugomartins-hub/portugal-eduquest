@@ -21,11 +21,29 @@ const districts = [
   { value: "acores", label: "Açores" }, { value: "madeira", label: "Madeira" },
 ];
 
+const schoolYears = [
+  { value: "1", label: "1º Ano" },
+  { value: "2", label: "2º Ano" },
+  { value: "3", label: "3º Ano" },
+  { value: "4", label: "4º Ano" },
+];
+
+interface ChildEmail {
+  email: string;
+  schoolYear: string;
+}
+
 const ParentRegisterPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "", email: "", password: "", district: "",
-    childEmails: ["", "", "", "", ""],
+    childEmails: [
+      { email: "", schoolYear: "1" },
+      { email: "", schoolYear: "1" },
+      { email: "", schoolYear: "1" },
+      { email: "", schoolYear: "1" },
+      { email: "", schoolYear: "1" },
+    ] as ChildEmail[],
   });
   const [loading, setLoading] = useState(false);
 
@@ -58,11 +76,15 @@ const ParentRegisterPage = () => {
       // Update district
       await supabase.from("profiles").update({ district: formData.district as any }).eq("user_id", data.user.id);
 
-      // Add authorized emails
-      const validEmails = formData.childEmails.filter(e => e.trim() !== "");
+      // Add authorized emails with school year
+      const validEmails = formData.childEmails.filter(e => e.email.trim() !== "");
       if (validEmails.length > 0) {
         await supabase.from("authorized_emails").insert(
-          validEmails.map(email => ({ parent_id: data.user!.id, email: email.trim() }))
+          validEmails.map(child => ({ 
+            parent_id: data.user!.id, 
+            email: child.email.trim().toLowerCase(),
+            school_year: child.schoolYear as any,
+          }))
         );
       }
 
@@ -70,6 +92,12 @@ const ParentRegisterPage = () => {
       navigate("/login");
     }
     setLoading(false);
+  };
+
+  const updateChildEmail = (index: number, field: keyof ChildEmail, value: string) => {
+    const updated = [...formData.childEmails];
+    updated[index] = { ...updated[index], [field]: value };
+    setFormData({ ...formData, childEmails: updated });
   };
 
   return (
@@ -106,21 +134,32 @@ const ParentRegisterPage = () => {
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label className="font-body font-semibold">Emails autorizados dos educandos (até 5)</Label>
-            <p className="text-xs text-muted-foreground font-body">Estes emails poderão registar-se como alunos</p>
-            {formData.childEmails.map((email, i) => (
-              <Input
-                key={i}
-                type="email"
-                placeholder={`Email do educando ${i + 1} (opcional)`}
-                value={email}
-                onChange={e => {
-                  const updated = [...formData.childEmails];
-                  updated[i] = e.target.value;
-                  setFormData({...formData, childEmails: updated});
-                }}
-              />
+          <div className="space-y-3">
+            <Label className="font-body font-semibold">Educandos autorizados (até 5)</Label>
+            <p className="text-xs text-muted-foreground font-body">Indique o email e ano de escolaridade de cada educando</p>
+            {formData.childEmails.map((child, i) => (
+              <div key={i} className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder={`Email do educando ${i + 1}`}
+                  value={child.email}
+                  onChange={e => updateChildEmail(i, "email", e.target.value)}
+                  className="flex-1"
+                />
+                <Select 
+                  value={child.schoolYear} 
+                  onValueChange={v => updateChildEmail(i, "schoolYear", v)}
+                >
+                  <SelectTrigger className="w-28">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {schoolYears.map(y => (
+                      <SelectItem key={y.value} value={y.value}>{y.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             ))}
           </div>
 
@@ -130,8 +169,8 @@ const ParentRegisterPage = () => {
         </form>
 
         <div className="mt-4 flex flex-col items-center gap-2">
-          <Button variant="ghost" className="w-full font-body text-muted-foreground" onClick={() => navigate("/login")}>
-            ← Cancelar e voltar
+          <Button variant="ghost" className="w-full font-body text-muted-foreground" onClick={() => navigate("/register")}>
+            ← Voltar
           </Button>
           <Link to="/login" className="text-sm text-accent underline font-body">Já tenho conta</Link>
         </div>

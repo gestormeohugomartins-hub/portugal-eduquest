@@ -20,6 +20,7 @@ export type Database = {
           email: string
           id: string
           parent_id: string
+          school_year: Database["public"]["Enums"]["school_year"] | null
           used: boolean
         }
         Insert: {
@@ -27,6 +28,7 @@ export type Database = {
           email: string
           id?: string
           parent_id: string
+          school_year?: Database["public"]["Enums"]["school_year"] | null
           used?: boolean
         }
         Update: {
@@ -34,6 +36,7 @@ export type Database = {
           email?: string
           id?: string
           parent_id?: string
+          school_year?: Database["public"]["Enums"]["school_year"] | null
           used?: boolean
         }
         Relationships: []
