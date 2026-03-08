@@ -4,6 +4,7 @@ import { IsometricCanvas } from './IsometricCanvas';
 import { BuildMenu } from './BuildMenu';
 import { BuildingInfoModal } from './BuildingInfoModal';
 import { ExpansionPanel } from './ExpansionPanel';
+import { ResourceBar } from './ResourceBar';
 import { MIN_GRID_SIZE, BUILDING_DEFS, EXPANSION_LEVELS, PlacedBuilding } from '@/lib/gameTypes';
 import { createEmptyGrid, applyBuildingsToGrid, canPlace, hasRoadAccess, getUpgradeCost, getTotalStats } from '@/lib/gridLogic';
 import { SFX } from '@/lib/sounds';
@@ -14,8 +15,10 @@ import { TILE_W, TILE_H } from '@/lib/gameTypes';
 import { calculateSimState, SimState, AnimatedCitizen, createAnimatedCitizen, updateCitizen, SIM_TICK_MS, SIM_RATES, Complaint, getCurrentSeason, SEASON_CONFIG } from '@/lib/simulation';
 import { TradePanel } from './TradePanel';
 import { TutorialOverlay } from './TutorialOverlay';
+import { useResources } from '@/hooks/useResources';
+import { TerrainElement } from '@/lib/terrainGeneration';
 import { toast } from 'sonner';
-import { BookOpen, Shield, Users, Sparkles, Music, Volume2, Maximize, Crown, Lock, Heart, Apple, Droplets, GraduationCap, ArrowLeftRight } from 'lucide-react';
+import { BookOpen, Shield, Users, Sparkles, Music, Volume2, Maximize, Crown, Lock, Heart, Apple, Droplets, GraduationCap, ArrowLeftRight, Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface VillageViewProps {
