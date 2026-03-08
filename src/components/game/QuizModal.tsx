@@ -58,21 +58,10 @@ export const QuizModal = ({ student, onClose }: QuizModalProps) => {
           .eq("student_id", student.id);
 
         if (playerBuildings && playerBuildings.length > 0) {
-          const monumentTypes = playerBuildings
+          // Get building types that are monuments
+          const builtMonumentIds = playerBuildings
             .map(b => b.building_type)
-            .filter(bt => {
-              const def = (await import("@/lib/gameTypes")).BUILDING_DEFS[bt];
-              return def?.category === "monument";
-            });
-
-          // Simpler approach: get all monument building types from player
-          const { data: allBuildings } = await supabase
-            .from("buildings")
-            .select("building_type")
-            .eq("student_id", student.id);
-          
-          const builtMonumentIds = (allBuildings || [])
-            .map(b => b.building_type);
+            .filter(bt => BUILDING_DEFS[bt]?.category === "monument");
 
           if (builtMonumentIds.length > 0) {
             // Get monument_info IDs for these buildings
