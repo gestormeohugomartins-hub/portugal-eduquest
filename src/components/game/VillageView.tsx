@@ -484,6 +484,11 @@ export const VillageView = ({ student, onQuiz, onRefresh, onPremium }: VillageVi
         )}
       </div>
 
+      {/* Resource bar */}
+      <div className="absolute top-12 left-2 z-20">
+        <ResourceBar resources={resources} />
+      </div>
+
       {xpLimited && (
         <div className="absolute top-12 left-2 right-16 z-20 bg-destructive/90 text-destructive-foreground text-xs font-body px-3 py-1.5 rounded-lg backdrop-blur-sm animate-pulse">
           <Crown className="w-3 h-3 inline mr-1" />
