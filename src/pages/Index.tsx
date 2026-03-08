@@ -71,32 +71,6 @@ const Index = () => {
     setSendingContact(false);
   };
 
-  const faqItems = [
-    {
-      question: "O que é o Questeduca?",
-      answer: "O Questeduca é um jogo educativo online para crianças do 1º ao 4º ano do ensino básico. Combina aprendizagem com diversão através de perguntas do currículo nacional, construção de aldeias virtuais e interação social segura."
-    },
-    {
-      question: "Como funciona o jogo?",
-      answer: "Os alunos respondem a perguntas de Português, Matemática, Estudo do Meio e Inglês. Ao acertar, ganham moedas e diamantes que podem usar para construir e melhorar a sua aldeia. Quanto mais estudam, mais a aldeia cresce!"
-    },
-    {
-      question: "O jogo é seguro para crianças?",
-      answer: "Sim! O Questeduca foi desenhado com a segurança em primeiro lugar. Os pais registam-se primeiro e autorizam os emails dos educandos. Todas as amizades e conversas são monitorizadas pelos encarregados de educação através do painel parental."
-    },
-    {
-      question: "Como é feito o controlo parental?",
-      answer: "Os pais têm acesso a um painel completo onde podem ver o progresso escolar, aprovar pedidos de amizade, ler conversas, definir prioridades de disciplinas e gerir as contas dos educandos."
-    },
-    {
-      question: "Quanto custa o Questeduca?",
-      answer: "O Questeduca oferece uma versão gratuita com funcionalidades básicas. Versões premium com mais conteúdo e funcionalidades estarão disponíveis em breve."
-    },
-    {
-      question: "As perguntas seguem o currículo nacional?",
-      answer: "Sim! Todas as perguntas são baseadas no currículo nacional do 1º ciclo do ensino básico português, organizadas por ano de escolaridade e disciplina."
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-background">
