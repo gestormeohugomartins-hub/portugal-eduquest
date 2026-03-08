@@ -170,14 +170,14 @@ export const QuizModal = ({ student, onClose }: QuizModalProps) => {
               Chegaste aos 50% de evolução do {student.school_year}º ano na versão gratuita.
             </p>
             <p className="font-body text-muted-foreground mb-6">
-              Para continuares a evoluir e desbloquear 100% do conteúdo, ativa o <strong>Questeduca Premium</strong> por apenas <strong>€4,99/ano escolar</strong>.
+              Para continuares a evoluir e desbloquear 100% do conteúdo, ativa o <strong>Questeduca Premium</strong> a partir de <strong>€1,99/mês</strong>.
             </p>
             <Button 
               className="bg-gold text-foreground font-bold px-8 py-3"
               onClick={async () => {
                 try {
                   const { data, error } = await supabase.functions.invoke("create-checkout", {
-                    body: { studentId: student.id },
+                    body: { studentId: student.id, plan: "monthly" },
                   });
                   if (error) throw error;
                   if (data?.url) window.open(data.url, "_blank");
@@ -187,7 +187,7 @@ export const QuizModal = ({ student, onClose }: QuizModalProps) => {
               }}
             >
               <Crown className="w-5 h-5 mr-2" />
-              Ativar Premium — €4,99
+              Ativar Premium — €1,99/mês
             </Button>
             <p className="font-body text-xs text-muted-foreground mt-3">
               Pede ao teu encarregado de educação para ativar.
