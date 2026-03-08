@@ -69,7 +69,7 @@ const AdminDashboard = () => {
   // Stats
   const [stats, setStats] = useState({ totalStudents: 0, totalParents: 0, totalAssociations: 0, totalAdmins: 0 });
 
-  const initialCheckDone = useState(false);
+  const initialCheckDone = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -84,15 +84,14 @@ const AdminDashboard = () => {
       } else {
         setLoading(false);
       }
-      initialCheckDone[1](true);
+      initialCheckDone.current = true;
     };
 
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
-      // Skip if initial check hasn't completed yet to avoid race condition
-      if (!initialCheckDone[0]) return;
+      if (!initialCheckDone.current) return;
       if (session?.user) {
         setCurrentUser(session.user);
         setIsLoggedIn(true);
