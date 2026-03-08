@@ -129,12 +129,12 @@ export function useResources(studentId: string | undefined) {
     }
 
     // Log gathering
-    await supabase.from('gathering_log').insert({
+    await (supabase.from('gathering_log' as any).insert({
       student_id: studentId,
       resource_type: info.resource,
       amount,
       terrain_element_id: element.id,
-    });
+    }) as any);
 
     // Update local state
     setResources(prev => ({ ...prev, [info.resource]: prev[info.resource] + amount }));
