@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getRandomQuestions, Question } from "@/data/questions";
 import { supabase } from "@/integrations/supabase/client";
+import { BUILDING_DEFS } from "@/lib/gameTypes";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { X, Coins, Diamond, Users, Crown, HelpCircle } from "lucide-react";
