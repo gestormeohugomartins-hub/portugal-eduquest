@@ -234,6 +234,14 @@ const AdminDashboard = () => {
     else { toast.success("Suspensão removida."); loadUsers(); }
   };
 
+  const handleConfirmEmail = async (userId: string) => {
+    const { data, error } = await supabase.functions.invoke("manage-users", {
+      body: { action: "confirm", user_id: userId },
+    });
+    if (error || data?.error) toast.error(data?.error || "Erro ao confirmar.");
+    else { toast.success("Email confirmado com sucesso!"); loadUsers(); }
+  };
+
   const handleDelete = async () => {
     if (!deleteUser) return;
     const { data, error } = await supabase.functions.invoke("manage-users", {
