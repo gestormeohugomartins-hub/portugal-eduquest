@@ -92,6 +92,7 @@ const ParentRegisterPage = () => {
       email: formData.email,
       password: formData.password,
       options: {
+        emailRedirectTo: `${window.location.origin}/email-verified`,
         data: {
           display_name: formData.name,
           role: "parent",

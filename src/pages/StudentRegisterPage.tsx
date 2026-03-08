@@ -103,6 +103,7 @@ const StudentRegisterPage = () => {
       email: formData.email.toLowerCase().trim(),
       password: formData.password,
       options: {
+        emailRedirectTo: `${window.location.origin}/email-verified`,
         data: {
           display_name: formData.name,
           role: "student",
