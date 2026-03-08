@@ -444,15 +444,68 @@ const ParentDashboard = () => {
           </TabsContent>
 
           <TabsContent value="social">
-            <div className="game-border bg-card p-6 text-center">
-              <Shield className="w-12 h-12 mx-auto mb-3 text-secondary" />
-              <h2 className="font-display text-xl font-bold mb-2">Controlo Social</h2>
-              <p className="font-body text-muted-foreground">
-                Gerir amizades e monitorizar conversas dos seus educandos.
-              </p>
-              <p className="font-body text-sm text-muted-foreground mt-4">
-                Os pedidos de amizade dos seus educandos aparecerão aqui para aprovação.
-              </p>
+            <div className="space-y-4">
+              <div className="game-border bg-card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Shield className="w-5 h-5 text-secondary" />
+                  <h2 className="font-display text-lg font-bold">Controlo Social</h2>
+                </div>
+                <p className="font-body text-sm text-muted-foreground mb-4">
+                  Aprove ou rejeite os pedidos de amizade dos seus educandos. A amizade só é ativada quando ambos os encarregados aprovam.
+                </p>
+
+                {pendingFriendships.length === 0 ? (
+                  <div className="text-center py-6">
+                    <Shield className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
+                    <p className="font-body text-sm text-muted-foreground">
+                      Nenhum pedido de amizade pendente.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingFriendships.map((f: any) => (
+                      <div key={f.id} className="border border-border rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-body text-sm">
+                              <strong>{f.myChild?.nickname || f.myChild?.display_name}</strong>
+                              {f.isRequester ? " quer ser amigo de " : " recebeu pedido de "}
+                              <strong>{f.otherPlayer?.nickname || f.otherPlayer?.display_name || "Jogador"}</strong>
+                            </p>
+                            <div className="font-body text-[10px] text-muted-foreground mt-1 flex gap-3">
+                              <span>Pai de quem pede: {f.requester_parent_approved ? "✅ Aprovado" : "⏳ Pendente"}</span>
+                              <span>Pai do solicitado: {f.receiver_parent_approved ? "✅ Aprovado" : "⏳ Pendente"}</span>
+                            </div>
+                          </div>
+                          {f.needsMyApproval && (
+                            <div className="flex gap-2 shrink-0">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 text-green-600 border-green-300"
+                                onClick={() => handleApproveFriendship(f.id, f.isRequester)}
+                              >
+                                <Check className="w-4 h-4 mr-1" /> Aprovar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 text-destructive border-destructive/30"
+                                onClick={() => handleRejectFriendship(f.id)}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                          {!f.needsMyApproval && (
+                            <span className="text-xs font-body text-green-600">✅ Aprovado por si</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </TabsContent>
 
