@@ -99,6 +99,13 @@ const StudentRegisterPage = () => {
     
     setLoading(true);
 
+    // Get parent district for student record
+    const { data: parentProfile } = await supabase
+      .from("profiles")
+      .select("district")
+      .eq("user_id", authorizedEmail.parent_id)
+      .maybeSingle();
+
     const { data, error } = await supabase.auth.signUp({
       email: formData.email.toLowerCase().trim(),
       password: formData.password,
@@ -107,6 +114,15 @@ const StudentRegisterPage = () => {
         data: {
           display_name: formData.name,
           role: "student",
+          student_data: {
+            parent_id: authorizedEmail.parent_id,
+            nickname: formData.nickname.trim(),
+            school_year: formData.schoolYear,
+            district: parentProfile?.district || "",
+            gender: formData.gender,
+            school_id: formData.schoolId || "",
+            authorized_email_id: authorizedEmail.id,
+          },
         },
       },
     });
@@ -118,26 +134,6 @@ const StudentRegisterPage = () => {
     }
 
     if (data.user) {
-      const { data: parentProfile } = await supabase
-        .from("profiles")
-        .select("district")
-        .eq("user_id", authorizedEmail.parent_id)
-        .single();
-
-      await supabase.from("students").insert({
-        user_id: data.user.id,
-        parent_id: authorizedEmail.parent_id,
-        display_name: formData.name,
-        nickname: formData.nickname.trim(),
-        school_year: formData.schoolYear as any,
-        district: parentProfile?.district as any,
-        gender: formData.gender,
-        school_id: formData.schoolId || null,
-      } as any);
-
-      await supabase.from("authorized_emails").update({ used: true }).eq("id", authorizedEmail.id);
-      await supabase.from("profiles").update({ role: "student" as any }).eq("user_id", data.user.id);
-
       try {
         const welcomeTemplate = emailTemplates.welcome(formData.name);
         await sendEmail({
