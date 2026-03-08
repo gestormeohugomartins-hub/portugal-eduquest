@@ -32,6 +32,27 @@ const StudentRegisterPage = () => {
   const [schools, setSchools] = useState<any[]>([]);
   const [schoolSearch, setSchoolSearch] = useState("");
   const [parentDistrict, setParentDistrict] = useState<string | null>(null);
+  const [nicknameStatus, setNicknameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const nicknameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced nickname availability check
+  const checkNicknameAvailability = useCallback((nickname: string) => {
+    if (nicknameTimer.current) clearTimeout(nicknameTimer.current);
+    const trimmed = nickname.trim();
+    if (!trimmed || trimmed.length < 3) {
+      setNicknameStatus("idle");
+      return;
+    }
+    setNicknameStatus("checking");
+    nicknameTimer.current = setTimeout(async () => {
+      const { data } = await supabase
+        .from("students")
+        .select("id")
+        .ilike("nickname", trimmed)
+        .limit(1);
+      setNicknameStatus(data && data.length > 0 ? "taken" : "available");
+    }, 400);
+  }, []);
 
   const loadSchools = async (district: string) => {
     const { data } = await supabase
