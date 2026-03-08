@@ -95,45 +95,6 @@ const InstallPage = () => {
           Instala a app no teu dispositivo para uma experiência completa!
         </p>
 
-        {/* Native App Store Buttons - Priority */}
-        <div className="space-y-3 mb-6">
-          {(isIOS || (!isIOS && !isAndroid)) && (
-            <a
-              href={APP_STORE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-3 w-full bg-foreground text-background font-bold py-4 px-6 rounded-xl hover:opacity-90 transition-opacity"
-            >
-              <Apple className="w-6 h-6" />
-              <div className="text-left">
-                <p className="text-[10px] font-body opacity-80 leading-none">Disponível na</p>
-                <p className="font-display text-lg leading-tight">App Store</p>
-              </div>
-            </a>
-          )}
-
-          {(isAndroid || (!isIOS && !isAndroid)) && (
-            <a
-              href={PLAY_STORE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-3 w-full bg-foreground text-background font-bold py-4 px-6 rounded-xl hover:opacity-90 transition-opacity"
-            >
-              <Play className="w-6 h-6" />
-              <div className="text-left">
-                <p className="text-[10px] font-body opacity-80 leading-none">Disponível no</p>
-                <p className="font-display text-lg leading-tight">Google Play</p>
-              </div>
-            </a>
-          )}
-        </div>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="h-px flex-1 bg-border" />
-          <span className="font-body text-xs text-muted-foreground">ou instala via browser</span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
 
         {/* PWA Install */}
         {deferredPrompt ? (
