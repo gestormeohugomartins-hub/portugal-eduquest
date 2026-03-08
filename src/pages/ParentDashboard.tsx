@@ -35,13 +35,21 @@ const districtLabels: Record<string, string> = {};
 districts.forEach(d => { districtLabels[d.value] = d.label; });
 
 const ParentDashboard = () => {
-  const { user, profile, isParent, loading, signOut } = useAuth();
+  const { user, profile, isParent, loading, signOut, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [children, setChildren] = useState<any[]>([]);
   const [authorizedEmails, setAuthorizedEmails] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [newSchoolYear, setNewSchoolYear] = useState("1");
   const [addingEmail, setAddingEmail] = useState(false);
+  const [editDistrict, setEditDistrict] = useState("");
+  const [savingDistrict, setSavingDistrict] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      setEditDistrict(profile.district || "");
+    }
+  }, [profile]);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
