@@ -237,18 +237,8 @@ const ParentDashboard = () => {
     loadPendingFriendships();
   };
 
-  const handleUpgradeChild = async (childId: string) => {
-    setCheckingOutChild(childId);
-    try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { studentId: childId },
-      });
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
-    } catch (error: any) {
-      toast.error("Erro ao iniciar pagamento: " + error.message);
-    }
-    setCheckingOutChild(null);
+  const handleUpgradeChild = (child: any) => {
+    setPremiumChild(child);
   };
 
   const handleManageSubscription = async () => {
