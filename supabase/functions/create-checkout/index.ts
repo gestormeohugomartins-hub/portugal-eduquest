@@ -24,7 +24,7 @@ serve(async (req) => {
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated");
 
-    const { studentId, associationCode } = await req.json();
+    const { studentId, associationCode, promoCode } = await req.json();
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
@@ -41,6 +41,30 @@ serve(async (req) => {
       metadata.association_code = associationCode;
     }
 
+    // If promo code, create a Stripe coupon on-the-fly
+    const discounts: any[] = [];
+    if (promoCode) {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+      const { data: promo } = await supabaseAdmin
+        .from("promo_codes")
+        .select("*")
+        .eq("code", promoCode)
+        .eq("is_active", true)
+        .single();
+
+      if (promo) {
+        const couponParams: any = { duration: "once" };
+        if (promo.discount_percent > 0) couponParams.percent_off = promo.discount_percent;
+        else if (promo.discount_amount > 0) { couponParams.amount_off = Math.round(promo.discount_amount * 100); couponParams.currency = "eur"; }
+        const coupon = await stripe.coupons.create(couponParams);
+        discounts.push({ coupon: coupon.id });
+        metadata.promo_code = promoCode;
+      }
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -52,6 +76,7 @@ serve(async (req) => {
       ],
       mode: "subscription",
       metadata,
+      ...(discounts.length > 0 ? { discounts } : {}),
       success_url: `${req.headers.get("origin")}/game?premium=success`,
       cancel_url: `${req.headers.get("origin")}/parent?premium=canceled`,
     });
