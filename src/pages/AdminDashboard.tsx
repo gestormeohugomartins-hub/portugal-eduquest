@@ -479,18 +479,32 @@ const AdminDashboard = () => {
           {/* USERS TAB */}
           <TabsContent value="users">
             <div className="space-y-6">
+              {/* Search bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar por nome ou email..."
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  className="pl-10"
+                />
+              </div>
+
               {/* Students */}
               <div>
                 <h2 className="font-display text-lg font-bold mb-2">Alunos ({studentUsers.length})</h2>
                 {studentUsers.length === 0 ? (
-                  <p className="font-body text-sm text-muted-foreground">Nenhum aluno.</p>
+                  <p className="font-body text-sm text-muted-foreground">Nenhum aluno encontrado.</p>
                 ) : (
-                  <div className="overflow-x-auto bg-card rounded-xl border border-border">
-                    <table className="w-full font-body text-sm">
-                      <thead><tr className="border-b border-border text-left"><th className="p-2">Nome</th><th className="p-2">Email</th><th className="p-2">Estado</th><th className="p-2">Ações</th></tr></thead>
-                      <tbody>{studentUsers.map(u => <UserRow key={u.id} u={u} />)}</tbody>
-                    </table>
-                  </div>
+                  <>
+                    <div className="overflow-x-auto bg-card rounded-xl border border-border">
+                      <table className="w-full font-body text-sm">
+                        <thead><tr className="border-b border-border text-left"><th className="p-2">Nome</th><th className="p-2">Email</th><th className="p-2">Estado</th><th className="p-2">Ações</th></tr></thead>
+                        <tbody>{paginate(studentUsers).map(u => <UserRow key={u.id} u={u} />)}</tbody>
+                      </table>
+                    </div>
+                    <Pagination total={studentUsers.length} filtered={studentUsers.length} />
+                  </>
                 )}
               </div>
 
@@ -498,14 +512,17 @@ const AdminDashboard = () => {
               <div>
                 <h2 className="font-display text-lg font-bold mb-2">Pais ({parentUsers.length})</h2>
                 {parentUsers.length === 0 ? (
-                  <p className="font-body text-sm text-muted-foreground">Nenhum pai.</p>
+                  <p className="font-body text-sm text-muted-foreground">Nenhum pai encontrado.</p>
                 ) : (
-                  <div className="overflow-x-auto bg-card rounded-xl border border-border">
-                    <table className="w-full font-body text-sm">
-                      <thead><tr className="border-b border-border text-left"><th className="p-2">Nome</th><th className="p-2">Email</th><th className="p-2">Estado</th><th className="p-2">Ações</th></tr></thead>
-                      <tbody>{parentUsers.map(u => <UserRow key={u.id} u={u} />)}</tbody>
-                    </table>
-                  </div>
+                  <>
+                    <div className="overflow-x-auto bg-card rounded-xl border border-border">
+                      <table className="w-full font-body text-sm">
+                        <thead><tr className="border-b border-border text-left"><th className="p-2">Nome</th><th className="p-2">Email</th><th className="p-2">Estado</th><th className="p-2">Ações</th></tr></thead>
+                        <tbody>{paginate(parentUsers).map(u => <UserRow key={u.id} u={u} />)}</tbody>
+                      </table>
+                    </div>
+                    <Pagination total={parentUsers.length} filtered={parentUsers.length} />
+                  </>
                 )}
               </div>
             </div>
