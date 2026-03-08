@@ -28,32 +28,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [studentData, setStudentData] = useState<any>(null);
-  const profileFetchInProgress = useRef(false);
+  const initialized = useRef(false);
 
   const fetchProfile = async (userId: string) => {
-    if (profileFetchInProgress.current) return;
-    profileFetchInProgress.current = true;
-    
     try {
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", userId)
         .single();
+      
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        setProfile(null);
+        setStudentData(null);
+        return;
+      }
+      
       setProfile(profileData);
 
       if (profileData?.role === "student") {
-        const { data: student } = await supabase
+        const { data: student, error: studentError } = await supabase
           .from("students")
           .select("*")
           .eq("user_id", userId)
           .single();
+        if (studentError) {
+          console.error("Error fetching student:", studentError);
+        }
         setStudentData(student);
       } else {
         setStudentData(null);
       }
-    } finally {
-      profileFetchInProgress.current = false;
+    } catch (err) {
+      console.error("fetchProfile exception:", err);
     }
   };
 
@@ -62,14 +70,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    let initialSessionHandled = false;
+    // First get the initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchProfile(session.user.id);
+      }
+      setLoading(false);
+      initialized.current = true;
+    });
 
+    // Then listen for auth changes (sign in, sign out, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Use setTimeout to avoid deadlock with Supabase auth
+          // Use setTimeout to avoid Supabase auth deadlock
           setTimeout(async () => {
             await fetchProfile(session.user.id);
             setLoading(false);
@@ -81,17 +99,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     );
-
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (initialSessionHandled) return;
-      initialSessionHandled = true;
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, []);
