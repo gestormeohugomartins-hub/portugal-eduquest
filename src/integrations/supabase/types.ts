@@ -951,6 +951,7 @@ export type Database = {
           id: string
           is_premium: boolean
           max_xp_free: number
+          nickname: string | null
           parent_id: string
           premium_expires_at: string | null
           quiz_reminders_enabled: boolean
@@ -976,6 +977,7 @@ export type Database = {
           id?: string
           is_premium?: boolean
           max_xp_free?: number
+          nickname?: string | null
           parent_id: string
           premium_expires_at?: string | null
           quiz_reminders_enabled?: boolean
@@ -1001,6 +1003,7 @@ export type Database = {
           id?: string
           is_premium?: boolean
           max_xp_free?: number
+          nickname?: string | null
           parent_id?: string
           premium_expires_at?: string | null
           quiz_reminders_enabled?: boolean

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { Plus, Trash2 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 const districts = [
@@ -39,24 +40,53 @@ const ParentRegisterPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "", email: "", password: "", district: "",
-    childEmails: [
-      { email: "", schoolYear: "1" },
-      { email: "", schoolYear: "1" },
-      { email: "", schoolYear: "1" },
-      { email: "", schoolYear: "1" },
-      { email: "", schoolYear: "1" },
-    ] as ChildEmail[],
   });
+  const [childEmails, setChildEmails] = useState<ChildEmail[]>([
+    { email: "", schoolYear: "1" },
+  ]);
   const [loading, setLoading] = useState(false);
+
+  const addChildEmail = () => {
+    if (childEmails.length < 5) {
+      setChildEmails([...childEmails, { email: "", schoolYear: "1" }]);
+    }
+  };
+
+  const removeChildEmail = (index: number) => {
+    if (childEmails.length > 1) {
+      setChildEmails(childEmails.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleChildEmailChange = (index: number, field: 'email' | 'schoolYear', value: string) => {
+    const updated = [...childEmails];
+    updated[index] = { ...updated[index], [field]: value };
+    setChildEmails(updated);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!childEmails[0].email.includes("@")) {
+      toast.error("Deve indicar pelo menos 1 email de educando válido");
+      return;
+    }
+
     if (formData.password.length < 6) {
       toast.error("A palavra-passe deve ter pelo menos 6 caracteres");
       return;
     }
+
+    if (!formData.district) {
+      toast.error("Deve selecionar um distrito");
+      return;
+    }
+
     setLoading(true);
 
+    const validEmails = childEmails.filter(c => c.email.includes("@"));
+
+    // Pass child emails and district in user metadata so the DB trigger handles them
     const { data, error } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
@@ -64,6 +94,8 @@ const ParentRegisterPage = () => {
         data: {
           display_name: formData.name,
           role: "parent",
+          district: formData.district,
+          child_emails: validEmails,
         },
       },
     });
@@ -75,33 +107,10 @@ const ParentRegisterPage = () => {
     }
 
     if (data.user) {
-      // Update profile with district
-      await supabase.from("profiles").update({ 
-        district: formData.district as any,
-      }).eq("user_id", data.user.id);
-
-      // Add authorized child emails with school year
-      const validEmails = formData.childEmails.filter(c => c.email.includes("@"));
-      if (validEmails.length > 0) {
-        await supabase.from("authorized_emails").insert(
-          validEmails.map(c => ({
-            parent_id: data.user!.id,
-            email: c.email.toLowerCase().trim(),
-            school_year: c.schoolYear as any,
-          }))
-        );
-      }
-
       toast.success("Registo efetuado! Verifique o seu email para confirmar a conta.");
       navigate("/login");
     }
     setLoading(false);
-  };
-
-  const handleChildEmailChange = (index: number, field: 'email' | 'schoolYear', value: string) => {
-    const updated = [...formData.childEmails];
-    updated[index] = { ...updated[index], [field]: value };
-    setFormData({ ...formData, childEmails: updated });
   };
 
   const handleGoogleSignIn = async () => {
@@ -165,15 +174,25 @@ const ParentRegisterPage = () => {
           </div>
 
           <div className="space-y-3">
-            <Label className="font-body font-semibold">Educandos autorizados (até 5)</Label>
-            <p className="text-xs text-muted-foreground font-body">Indique o email e ano de escolaridade de cada educando</p>
-            {formData.childEmails.map((child, i) => (
-              <div key={i} className="flex gap-2">
+            <div className="flex items-center justify-between">
+              <Label className="font-body font-semibold">Educandos autorizados</Label>
+              {childEmails.length < 5 && (
+                <Button type="button" variant="ghost" size="sm" onClick={addChildEmail} className="text-xs font-body gap-1">
+                  <Plus className="w-3 h-3" /> Adicionar
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground font-body">
+              Indique o email e ano de cada educando (mín. 1, máx. 5)
+            </p>
+            {childEmails.map((child, i) => (
+              <div key={i} className="flex gap-2 items-center">
                 <Input
                   type="email"
                   placeholder={`Email do educando ${i + 1}`}
                   value={child.email}
                   onChange={e => handleChildEmailChange(i, 'email', e.target.value)}
+                  required={i === 0}
                   className="flex-1"
                 />
                 <Select 
@@ -189,6 +208,11 @@ const ParentRegisterPage = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                {childEmails.length > 1 && (
+                  <Button type="button" variant="ghost" size="icon" onClick={() => removeChildEmail(i)} className="shrink-0 h-9 w-9 text-destructive">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
             ))}
           </div>

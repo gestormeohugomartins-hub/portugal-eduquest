@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEmail, emailTemplates } from "@/lib/email";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Loader2, Search } from "lucide-react";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 const districtLabels: Record<string, string> = {
@@ -22,7 +22,7 @@ const districtLabels: Record<string, string> = {
 const StudentRegisterPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: "", email: "", password: "", gender: "indefinido", schoolYear: "1", schoolId: "",
+    name: "", nickname: "", email: "", password: "", gender: "indefinido", schoolYear: "1", schoolId: "",
   });
   const [loading, setLoading] = useState(false);
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "authorized" | "not_authorized">("idle");
@@ -60,7 +60,6 @@ const StudentRegisterPage = () => {
       setAuthorizedEmail(data);
       setFormData(prev => ({ ...prev, schoolYear: data.school_year || "1" }));
       
-      // Load parent's district and schools
       const { data: parentProfile } = await supabase
         .from("profiles")
         .select("district")
@@ -82,6 +81,11 @@ const StudentRegisterPage = () => {
     
     if (emailStatus !== "authorized" || !authorizedEmail) {
       toast.error("O email deve estar autorizado por um encarregado de educação");
+      return;
+    }
+
+    if (!formData.nickname.trim()) {
+      toast.error("Deves escolher um nickname para o jogo");
       return;
     }
     
@@ -110,7 +114,6 @@ const StudentRegisterPage = () => {
     }
 
     if (data.user) {
-      // Get parent's district
       const { data: parentProfile } = await supabase
         .from("profiles")
         .select("district")
@@ -121,19 +124,16 @@ const StudentRegisterPage = () => {
         user_id: data.user.id,
         parent_id: authorizedEmail.parent_id,
         display_name: formData.name,
+        nickname: formData.nickname.trim(),
         school_year: formData.schoolYear as any,
         district: parentProfile?.district as any,
         gender: formData.gender,
         school_id: formData.schoolId || null,
       } as any);
 
-      // Mark email as used
       await supabase.from("authorized_emails").update({ used: true }).eq("id", authorizedEmail.id);
-
-      // Update profile role
       await supabase.from("profiles").update({ role: "student" as any }).eq("user_id", data.user.id);
 
-      // Send welcome email
       try {
         const welcomeTemplate = emailTemplates.welcome(formData.name);
         await sendEmail({
@@ -143,7 +143,6 @@ const StudentRegisterPage = () => {
         });
       } catch (emailError) {
         console.error("Failed to send welcome email:", emailError);
-        // Don't block registration if email fails
       }
 
       toast.success("Registo efetuado! Verifica o teu email para confirmar a conta.");
@@ -165,14 +164,29 @@ const StudentRegisterPage = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label className="font-body font-semibold">Nome</Label>
+            <Label className="font-body font-semibold">Nome completo</Label>
             <Input 
               value={formData.name} 
               onChange={e => setFormData({...formData, name: e.target.value})} 
-              placeholder="O teu nome"
+              placeholder="O teu nome verdadeiro"
               required 
               className="mt-1" 
             />
+          </div>
+
+          <div>
+            <Label className="font-body font-semibold">Nickname (nome no jogo)</Label>
+            <Input 
+              value={formData.nickname} 
+              onChange={e => setFormData({...formData, nickname: e.target.value})} 
+              placeholder="Ex: SuperCavaleiro, PresidenteMax..."
+              required 
+              className="mt-1" 
+              maxLength={20}
+            />
+            <p className="text-xs text-muted-foreground font-body mt-1">
+              Este será o teu nome de presidente e como os outros jogadores te vão encontrar.
+            </p>
           </div>
           
           <div>
@@ -234,7 +248,6 @@ const StudentRegisterPage = () => {
             </Select>
           </div>
 
-          {/* School Selection */}
           {schools.length > 0 && (
             <div>
               <Label className="font-body font-semibold">
@@ -273,13 +286,9 @@ const StudentRegisterPage = () => {
         </form>
 
         <div className="mt-6 text-center space-y-2">
-          <p className="font-body text-sm text-muted-foreground">
-            Já tens conta?
-          </p>
+          <p className="font-body text-sm text-muted-foreground">Já tens conta?</p>
           <Link to="/login">
-            <Button variant="link" className="font-body text-primary">
-              Entrar na minha conta
-            </Button>
+            <Button variant="link" className="font-body text-primary">Entrar na minha conta</Button>
           </Link>
         </div>
         
