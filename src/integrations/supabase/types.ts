@@ -280,6 +280,7 @@ export type Database = {
           diamonds: number
           display_name: string
           district: Database["public"]["Enums"]["district"] | null
+          gender: string | null
           id: string
           parent_id: string
           school_year: Database["public"]["Enums"]["school_year"]
@@ -296,6 +297,7 @@ export type Database = {
           diamonds?: number
           display_name: string
           district?: Database["public"]["Enums"]["district"] | null
+          gender?: string | null
           id?: string
           parent_id: string
           school_year?: Database["public"]["Enums"]["school_year"]
@@ -312,6 +314,7 @@ export type Database = {
           diamonds?: number
           display_name?: string
           district?: Database["public"]["Enums"]["district"] | null
+          gender?: string | null
           id?: string
           parent_id?: string
           school_year?: Database["public"]["Enums"]["school_year"]

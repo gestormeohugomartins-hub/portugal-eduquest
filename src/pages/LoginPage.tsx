@@ -54,7 +54,10 @@ const LoginPage = () => {
       <div className="w-full max-w-md game-border p-8 bg-card">
         <div className="text-center mb-6">
           <img src={logo} alt="EduQuest" className="w-32 mx-auto mb-4" />
-          <h1 className="font-display text-2xl font-bold">Entrar no Jogo</h1>
+          <h1 className="font-display text-2xl font-bold">Continuar Aventura</h1>
+          <p className="font-body text-sm text-muted-foreground mt-1">
+            Entra na tua conta para continuar a jogar
+          </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -71,7 +74,12 @@ const LoginPage = () => {
             />
           </div>
           <div>
-            <Label htmlFor="password" className="font-body font-semibold">Palavra-passe</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="font-body font-semibold">Palavra-passe</Label>
+              <Link to="/forgot-password" className="text-xs text-primary hover:underline font-body">
+                Esqueci-me da palavra-passe
+              </Link>
+            </div>
             <Input
               id="password"
               type="password"
@@ -112,24 +120,20 @@ const LoginPage = () => {
           Entrar com Google
         </Button>
 
-        <div className="mt-6 text-center space-y-2">
-          <p className="font-body text-sm text-muted-foreground">
+        <div className="mt-6 text-center">
+          <p className="font-body text-sm text-muted-foreground mb-2">
             Ainda não tens conta?
           </p>
-          <div className="flex flex-col gap-2">
-            <Link to="/register/parent">
-              <Button variant="outline" className="w-full font-body">
-                Registar como Pai/Enc. Educação
-              </Button>
-            </Link>
-            <Link to="/register/student">
-              <Button variant="outline" className="w-full font-body">
-                Registar como Aluno
-              </Button>
-            </Link>
-          </div>
-          <Link to="/" className="text-sm text-accent underline font-body">
-            Voltar ao início
+          <Link to="/register">
+            <Button variant="link" className="font-body text-primary">
+              Criar nova conta
+            </Button>
+          </Link>
+        </div>
+        
+        <div className="mt-4 text-center">
+          <Link to="/" className="text-sm text-muted-foreground underline font-body">
+            ← Voltar ao início
           </Link>
         </div>
       </div>

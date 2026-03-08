@@ -32,7 +32,7 @@ const Index = () => {
             <Button 
               size="lg" 
               className="bg-primary text-primary-foreground font-bold text-lg px-8 py-6 animate-pulse-gold"
-              onClick={() => navigate("/register/parent")}
+              onClick={() => navigate("/register")}
             >
               🏰 Começar Aventura
             </Button>
@@ -42,7 +42,7 @@ const Index = () => {
               className="border-2 border-foreground/20 font-bold text-lg px-8 py-6"
               onClick={() => navigate("/login")}
             >
-              ⚔️ Já Tenho Conta
+              ⚔️ Continuar Aventura
             </Button>
           </div>
         </div>
@@ -86,9 +86,9 @@ const Index = () => {
             variant="outline" 
             size="lg"
             className="border-2 border-foreground/20 font-bold"
-            onClick={() => navigate("/register/parent")}
+            onClick={() => navigate("/register")}
           >
-            Registar como Pai/Encarregado de Educação
+            Saber Mais sobre Controlo Parental
           </Button>
         </div>
       </div>
