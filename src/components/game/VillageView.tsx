@@ -320,7 +320,14 @@ export const VillageView = ({ student, onQuiz, onRefresh, onPremium }: VillageVi
 
     if (!canPlace(fullGrid, gx, gy, def.width, def.height)) { toast.error('Espaço ocupado!'); SFX.wrong(); return; }
     if (def.requiresRoad && !hasRoadAccess(fullGrid, gx, gy, def.width, def.height)) { toast.error('Precisa de estrada adjacente!'); SFX.wrong(); return; }
-    if (student.coins < def.costCoins || student.diamonds < def.costDiamonds) { toast.error('Recursos insuficientes!'); SFX.wrong(); return; }
+    if (student.coins < def.costCoins || student.diamonds < def.costDiamonds) { toast.error('Moedas/diamantes insuficientes!'); SFX.wrong(); return; }
+    // Check natural resource costs
+    for (const rc of def.resourceCosts) {
+      if (resources[rc.resource] < rc.amount) {
+        toast.error(`Falta ${rc.resource === 'wood' ? 'madeira' : rc.resource === 'stone' ? 'pedra' : rc.resource === 'iron' ? 'ferro' : rc.resource}! Recolhe recursos à volta da aldeia.`);
+        SFX.wrong(); return;
+      }
+    }
 
     const { data, error } = await supabase
       .from('buildings')
