@@ -246,8 +246,8 @@ const GamePage = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t-2 border-border z-50">
-        <div className="flex justify-around items-center py-2 px-4 max-w-lg mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t-2 border-border z-50 safe-bottom">
+        <div className="flex justify-around items-center py-1.5 sm:py-2 px-2 sm:px-4 max-w-lg mx-auto">
           <Button 
             variant={view === "village" ? "default" : "ghost"} 
             size="sm" 

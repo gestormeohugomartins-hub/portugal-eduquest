@@ -13,6 +13,9 @@ export default {
       },
     },
     extend: {
+      screens: {
+        'xs': '400px',
+      },
       fontFamily: {
         display: ['Cinzel', 'serif'],
         body: ['Nunito', 'sans-serif'],
