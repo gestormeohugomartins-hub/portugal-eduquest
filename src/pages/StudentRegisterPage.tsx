@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEmail, emailTemplates } from "@/lib/email";
@@ -7,17 +7,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Search } from "lucide-react";
 import logo from "@/assets/logo.png";
+
+const districtLabels: Record<string, string> = {
+  aveiro: "Aveiro", beja: "Beja", braga: "Braga", braganca: "Bragança",
+  castelo_branco: "Castelo Branco", coimbra: "Coimbra", evora: "Évora",
+  faro: "Faro", guarda: "Guarda", leiria: "Leiria", lisboa: "Lisboa",
+  portalegre: "Portalegre", porto: "Porto", santarem: "Santarém",
+  setubal: "Setúbal", viana_castelo: "Viana do Castelo", vila_real: "Vila Real",
+  viseu: "Viseu", acores: "Açores", madeira: "Madeira",
+};
 
 const StudentRegisterPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: "", email: "", password: "", gender: "indefinido", schoolYear: "1",
+    name: "", email: "", password: "", gender: "indefinido", schoolYear: "1", schoolId: "",
   });
   const [loading, setLoading] = useState(false);
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "authorized" | "not_authorized">("idle");
   const [authorizedEmail, setAuthorizedEmail] = useState<any>(null);
+  const [schools, setSchools] = useState<any[]>([]);
+  const [schoolSearch, setSchoolSearch] = useState("");
+  const [parentDistrict, setParentDistrict] = useState<string | null>(null);
+
+  const loadSchools = async (district: string) => {
+    const { data } = await supabase
+      .from("schools")
+      .select("*")
+      .eq("district", district)
+      .order("name");
+    setSchools(data || []);
+  };
 
   const checkEmailAuthorization = useCallback(async (email: string) => {
     if (!email || !email.includes("@")) {
@@ -37,8 +58,19 @@ const StudentRegisterPage = () => {
     if (data) {
       setEmailStatus("authorized");
       setAuthorizedEmail(data);
-      // Auto-fill school year from authorized email
       setFormData(prev => ({ ...prev, schoolYear: data.school_year || "1" }));
+      
+      // Load parent's district and schools
+      const { data: parentProfile } = await supabase
+        .from("profiles")
+        .select("district")
+        .eq("user_id", data.parent_id)
+        .single();
+      
+      if (parentProfile?.district) {
+        setParentDistrict(parentProfile.district as string);
+        loadSchools(parentProfile.district as string);
+      }
     } else {
       setEmailStatus("not_authorized");
       setAuthorizedEmail(null);
@@ -85,7 +117,6 @@ const StudentRegisterPage = () => {
         .eq("user_id", authorizedEmail.parent_id)
         .single();
 
-      // Create student record with gender and school year from authorized email
       await supabase.from("students").insert({
         user_id: data.user.id,
         parent_id: authorizedEmail.parent_id,
@@ -93,7 +124,8 @@ const StudentRegisterPage = () => {
         school_year: formData.schoolYear as any,
         district: parentProfile?.district as any,
         gender: formData.gender,
-      });
+        school_id: formData.schoolId || null,
+      } as any);
 
       // Mark email as used
       await supabase.from("authorized_emails").update({ used: true }).eq("id", authorizedEmail.id);
@@ -201,6 +233,35 @@ const StudentRegisterPage = () => {
               </SelectContent>
             </Select>
           </div>
+
+          {/* School Selection */}
+          {schools.length > 0 && (
+            <div>
+              <Label className="font-body font-semibold">
+                Escola {parentDistrict ? `(${districtLabels[parentDistrict] || parentDistrict})` : ""}
+              </Label>
+              <Input
+                placeholder="Pesquisar escola..."
+                value={schoolSearch}
+                onChange={e => setSchoolSearch(e.target.value)}
+                className="mt-1 mb-2"
+              />
+              <Select value={formData.schoolId} onValueChange={v => setFormData({...formData, schoolId: v})}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Seleciona a tua escola" /></SelectTrigger>
+                <SelectContent className="max-h-48">
+                  {schools
+                    .filter(s => s.name.toLowerCase().includes(schoolSearch.toLowerCase()) || 
+                                 (s.municipality || "").toLowerCase().includes(schoolSearch.toLowerCase()))
+                    .map(school => (
+                      <SelectItem key={school.id} value={school.id}>
+                        {school.name} — {school.municipality}
+                      </SelectItem>
+                    ))
+                  }
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <Button 
             type="submit" 

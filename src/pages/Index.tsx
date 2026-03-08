@@ -5,12 +5,6 @@ import villageHero from "@/assets/village-hero.png";
 import { Button } from "@/components/ui/button";
 import { Shield, BookOpen, Users, Map, Cookie, FileText, Mail, MessageSquare, X } from "lucide-react";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -77,32 +71,6 @@ const Index = () => {
     setSendingContact(false);
   };
 
-  const faqItems = [
-    {
-      question: "O que é o Questeduca?",
-      answer: "O Questeduca é um jogo educativo online para crianças do 1º ao 4º ano do ensino básico. Combina aprendizagem com diversão através de perguntas do currículo nacional, construção de aldeias virtuais e interação social segura."
-    },
-    {
-      question: "Como funciona o jogo?",
-      answer: "Os alunos respondem a perguntas de Português, Matemática, Estudo do Meio e Inglês. Ao acertar, ganham moedas e diamantes que podem usar para construir e melhorar a sua aldeia. Quanto mais estudam, mais a aldeia cresce!"
-    },
-    {
-      question: "O jogo é seguro para crianças?",
-      answer: "Sim! O Questeduca foi desenhado com a segurança em primeiro lugar. Os pais registam-se primeiro e autorizam os emails dos educandos. Todas as amizades e conversas são monitorizadas pelos encarregados de educação através do painel parental."
-    },
-    {
-      question: "Como é feito o controlo parental?",
-      answer: "Os pais têm acesso a um painel completo onde podem ver o progresso escolar, aprovar pedidos de amizade, ler conversas, definir prioridades de disciplinas e gerir as contas dos educandos."
-    },
-    {
-      question: "Quanto custa o Questeduca?",
-      answer: "O Questeduca oferece uma versão gratuita com funcionalidades básicas. Versões premium com mais conteúdo e funcionalidades estarão disponíveis em breve."
-    },
-    {
-      question: "As perguntas seguem o currículo nacional?",
-      answer: "Sim! Todas as perguntas são baseadas no currículo nacional do 1º ciclo do ensino básico português, organizadas por ano de escolaridade e disciplina."
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -272,28 +240,30 @@ const Index = () => {
         </div>
       </div>
 
-      {/* FAQ */}
+      {/* FAQ & Parental Links */}
       <div className="py-12 px-4 bg-muted/30">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="font-display text-2xl md:text-3xl font-bold text-center mb-8">
-            Perguntas Frequentes
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="font-display text-2xl md:text-3xl font-bold mb-6">
+            Saber Mais
           </h2>
-          <Accordion type="single" collapsible className="space-y-2">
-            {faqItems.map((item, index) => (
-              <AccordionItem 
-                key={index} 
-                value={`item-${index}`}
-                className="bg-card border border-border rounded-lg px-4"
-              >
-                <AccordionTrigger className="font-body font-semibold text-left hover:no-underline">
-                  {item.question}
-                </AccordionTrigger>
-                <AccordionContent className="font-body text-muted-foreground">
-                  {item.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              variant="outline" 
+              size="lg"
+              className="border-2 border-primary/30 font-bold"
+              onClick={() => navigate("/faq")}
+            >
+              ❓ Perguntas Frequentes
+            </Button>
+            <Button 
+              variant="outline" 
+              size="lg"
+              className="border-2 border-primary/30 font-bold"
+              onClick={() => navigate("/register")}
+            >
+              🛡️ Controlo Parental
+            </Button>
+          </div>
         </div>
       </div>
 

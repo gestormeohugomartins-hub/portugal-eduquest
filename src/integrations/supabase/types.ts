@@ -555,6 +555,33 @@ export type Database = {
           },
         ]
       }
+      schools: {
+        Row: {
+          created_at: string | null
+          district: string
+          id: string
+          municipality: string | null
+          name: string
+          school_group: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          district: string
+          id?: string
+          municipality?: string | null
+          name: string
+          school_group?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          district?: string
+          id?: string
+          municipality?: string | null
+          name?: string
+          school_group?: string | null
+        }
+        Relationships: []
+      }
       shop_items: {
         Row: {
           citizen_bonus: number | null
@@ -620,7 +647,11 @@ export type Database = {
           district: Database["public"]["Enums"]["district"] | null
           gender: string | null
           id: string
+          is_premium: boolean
+          max_xp_free: number
           parent_id: string
+          premium_expires_at: string | null
+          school_id: string | null
           school_name: string | null
           school_year: Database["public"]["Enums"]["school_year"]
           updated_at: string
@@ -638,7 +669,11 @@ export type Database = {
           district?: Database["public"]["Enums"]["district"] | null
           gender?: string | null
           id?: string
+          is_premium?: boolean
+          max_xp_free?: number
           parent_id: string
+          premium_expires_at?: string | null
+          school_id?: string | null
           school_name?: string | null
           school_year?: Database["public"]["Enums"]["school_year"]
           updated_at?: string
@@ -656,7 +691,11 @@ export type Database = {
           district?: Database["public"]["Enums"]["district"] | null
           gender?: string | null
           id?: string
+          is_premium?: boolean
+          max_xp_free?: number
           parent_id?: string
+          premium_expires_at?: string | null
+          school_id?: string | null
           school_name?: string | null
           school_year?: Database["public"]["Enums"]["school_year"]
           updated_at?: string
@@ -664,7 +703,15 @@ export type Database = {
           village_level?: number
           xp?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subject_priorities: {
         Row: {

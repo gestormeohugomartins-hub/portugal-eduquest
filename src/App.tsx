@@ -15,6 +15,7 @@ import ParentResetStudentPage from "./pages/ParentResetStudentPage";
 import GamePage from "./pages/GamePage";
 import ParentDashboard from "./pages/ParentDashboard";
 import PlacementTestPage from "./pages/PlacementTestPage";
+import FAQPage from "./pages/FAQPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/game" element={<GamePage />} />
             <Route path="/parent" element={<ParentDashboard />} />
             <Route path="/placement-test" element={<PlacementTestPage />} />
+            <Route path="/faq" element={<FAQPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
