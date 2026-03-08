@@ -28,11 +28,11 @@ const faqItems = [
   },
   {
     question: "Qual a diferença entre a versão gratuita e premium?",
-    answer: "Na versão gratuita, os alunos podem evoluir até 50% de cada ano escolar. A versão premium (€1,99/mês ou €21,49/ano) desbloqueia 100% do conteúdo, permitindo completar todo o ano e progredir automaticamente. A progressão de ano é automática durante as férias de verão."
+    answer: "Na versão gratuita, os alunos podem evoluir até 50% de cada ano escolar. A versão premium (€1,99/mês ou €21,49/ano21,49/ano) desbloqueia 100% do conteúdo, permitindo completar todo o ano e progredir automaticamente. A progressão de ano é automática durante as férias de verão."
   },
   {
     question: "Quanto custa o Questeduca Premium?",
-    answer: "O Questeduca Premium custa €4,99 por ano escolar. Este valor desbloqueia todo o conteúdo do ano, incluindo progressão automática para o ano seguinte durante as férias de verão."
+    answer: "O Questeduca Premium 1,99/mês ou €21,49/ano (poupa 10%). Este valor desbloqueia todo o conteúd�do do ano, incluindo progressão automática para o ano seguinte durante as férias de verão."
   },
   {
     question: "As perguntas seguem o currículo nacional?",
