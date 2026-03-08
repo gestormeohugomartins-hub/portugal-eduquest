@@ -230,7 +230,7 @@ export const BUILDING_DEFS: Record<string, BuildingDef> = {
   torre_belem: {
     id: 'torre_belem', name: 'Torre de Belém', emoji: '🏛️',
     category: 'monument', width: 2, height: 2,
-    costCoins: 0, costDiamonds: 0, maxLevel: 1,
+    costCoins: 0, costDiamonds: 0, resourceCosts: [], maxLevel: 1,
     citizenBonus: 30, defenseBonus: 20, xpBonus: 100,
     requiresRoad: true, premiumOnly: true, minVillageLevel: 1,
     description: 'Monumento de Lisboa. Prémio de teste mensal.',
