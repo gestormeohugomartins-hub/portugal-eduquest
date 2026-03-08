@@ -331,14 +331,7 @@ const GamePage = () => {
         onStartTest={handleMonthlyTestStart}
       />
 
-      <PremiumModal
-        open={showPremium}
-        onOpenChange={setShowPremium}
-        studentId={studentData.id}
-        isPremium={studentData.is_premium || false}
-        associationCode={(studentData as any).association_code}
-        createdAt={studentData.created_at}
-      />
+    </div>
     </div>
   );
 };
