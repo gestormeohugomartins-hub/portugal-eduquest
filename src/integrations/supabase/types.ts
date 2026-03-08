@@ -860,11 +860,14 @@ export type Database = {
           created_by: string | null
           current_uses: number | null
           discount_amount: number | null
+          discount_duration_months: number | null
           discount_percent: number | null
           expires_at: string | null
+          free_months: number | null
           id: string
           is_active: boolean | null
           max_uses: number | null
+          promo_type: string
           target_user_id: string | null
         }
         Insert: {
@@ -873,11 +876,14 @@ export type Database = {
           created_by?: string | null
           current_uses?: number | null
           discount_amount?: number | null
+          discount_duration_months?: number | null
           discount_percent?: number | null
           expires_at?: string | null
+          free_months?: number | null
           id?: string
           is_active?: boolean | null
           max_uses?: number | null
+          promo_type?: string
           target_user_id?: string | null
         }
         Update: {
@@ -886,11 +892,14 @@ export type Database = {
           created_by?: string | null
           current_uses?: number | null
           discount_amount?: number | null
+          discount_duration_months?: number | null
           discount_percent?: number | null
           expires_at?: string | null
+          free_months?: number | null
           id?: string
           is_active?: boolean | null
           max_uses?: number | null
+          promo_type?: string
           target_user_id?: string | null
         }
         Relationships: []
@@ -1212,6 +1221,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "subject_priorities_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_discounts: {
+        Row: {
+          applied: boolean
+          apply_to_all: boolean
+          created_at: string
+          created_by: string | null
+          discount_percent: number
+          id: string
+          notes: string | null
+          student_id: string | null
+          target_months: string[]
+        }
+        Insert: {
+          applied?: boolean
+          apply_to_all?: boolean
+          created_at?: string
+          created_by?: string | null
+          discount_percent?: number
+          id?: string
+          notes?: string | null
+          student_id?: string | null
+          target_months?: string[]
+        }
+        Update: {
+          applied?: boolean
+          apply_to_all?: boolean
+          created_at?: string
+          created_by?: string | null
+          discount_percent?: number
+          id?: string
+          notes?: string | null
+          student_id?: string | null
+          target_months?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_discounts_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
