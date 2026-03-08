@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      association_donations: {
+        Row: {
+          amount: number
+          association_id: string
+          created_at: string | null
+          id: string
+          payment_id: string | null
+          student_id: string
+        }
+        Insert: {
+          amount?: number
+          association_id: string
+          created_at?: string | null
+          id?: string
+          payment_id?: string | null
+          student_id: string
+        }
+        Update: {
+          amount?: number
+          association_id?: string
+          created_at?: string | null
+          id?: string
+          payment_id?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_donations_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "parent_associations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "association_donations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       authorized_emails: {
         Row: {
           created_at: string
@@ -357,6 +399,74 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_associations: {
+        Row: {
+          association_code: string
+          ata_document_url: string | null
+          ata_updated_at: string | null
+          bank_account_holder: string | null
+          bank_proof_url: string | null
+          created_at: string | null
+          email: string
+          iban: string | null
+          id: string
+          name: string
+          president_name: string
+          president_role: string
+          school_id: string
+          status: string
+          total_paid: number
+          total_raised: number
+          updated_at: string | null
+        }
+        Insert: {
+          association_code: string
+          ata_document_url?: string | null
+          ata_updated_at?: string | null
+          bank_account_holder?: string | null
+          bank_proof_url?: string | null
+          created_at?: string | null
+          email: string
+          iban?: string | null
+          id?: string
+          name: string
+          president_name: string
+          president_role?: string
+          school_id: string
+          status?: string
+          total_paid?: number
+          total_raised?: number
+          updated_at?: string | null
+        }
+        Update: {
+          association_code?: string
+          ata_document_url?: string | null
+          ata_updated_at?: string | null
+          bank_account_holder?: string | null
+          bank_proof_url?: string | null
+          created_at?: string | null
+          email?: string
+          iban?: string | null
+          id?: string
+          name?: string
+          president_name?: string
+          president_role?: string
+          school_id?: string
+          status?: string
+          total_paid?: number
+          total_raised?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_associations_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_inventory: {
         Row: {
           id: string
@@ -638,6 +748,8 @@ export type Database = {
       }
       students: {
         Row: {
+          association_code: string | null
+          association_code_set_at: string | null
           citizens: number
           coins: number
           created_at: string
@@ -660,6 +772,8 @@ export type Database = {
           xp: number
         }
         Insert: {
+          association_code?: string | null
+          association_code_set_at?: string | null
           citizens?: number
           coins?: number
           created_at?: string
@@ -682,6 +796,8 @@ export type Database = {
           xp?: number
         }
         Update: {
+          association_code?: string | null
+          association_code_set_at?: string | null
           citizens?: number
           coins?: number
           created_at?: string

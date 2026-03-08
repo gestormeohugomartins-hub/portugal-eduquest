@@ -12,12 +12,13 @@ import { MissionsPanel } from "@/components/game/MissionsPanel";
 import { BattleModal } from "@/components/game/BattleModal";
 import { RankingsPanel } from "@/components/game/RankingsPanel";
 import { MonthlyTestModal } from "@/components/game/MonthlyTestModal";
+import { PremiumModal } from "@/components/game/PremiumModal";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { 
   Map, MessageCircle, BookOpen, LogOut, Home, 
-  ShoppingBag, Target, Swords, Trophy, Menu, GraduationCap 
+  ShoppingBag, Target, Swords, Trophy, Menu, GraduationCap, Crown 
 } from "lucide-react";
 
 type GameView = "village" | "map" | "chat";
@@ -31,6 +32,7 @@ const GamePage = () => {
   const [showBattle, setShowBattle] = useState(false);
   const [showMonthlyTest, setShowMonthlyTest] = useState(false);
   const [battleQuizCallback, setBattleQuizCallback] = useState<(() => Promise<boolean>) | null>(null);
+  const [showPremium, setShowPremium] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
@@ -159,10 +161,10 @@ const GamePage = () => {
               <Button 
                 variant="outline" 
                 className="flex flex-col gap-2 h-auto py-4"
-                onClick={() => setView("map")}
+                onClick={() => setShowPremium(true)}
               >
-                <Trophy className="w-6 h-6 text-gold" />
-                <span className="text-xs">Rankings</span>
+                <Crown className="w-6 h-6 text-gold" />
+                <span className="text-xs">Premium</span>
               </Button>
             </div>
 
@@ -274,6 +276,15 @@ const GamePage = () => {
         schoolYear={studentData.school_year}
         onTestComplete={handleClaimMissionReward}
         onStartTest={handleMonthlyTestStart}
+      />
+
+      <PremiumModal
+        open={showPremium}
+        onOpenChange={setShowPremium}
+        studentId={studentData.id}
+        isPremium={studentData.is_premium || false}
+        associationCode={(studentData as any).association_code}
+        createdAt={studentData.created_at}
       />
     </div>
   );
