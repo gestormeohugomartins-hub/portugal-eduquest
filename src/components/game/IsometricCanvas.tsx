@@ -33,8 +33,8 @@ const FARM_COLORS = ['#6b8e23', '#7a9e32', '#5a7e13'];
 
 export const IsometricCanvas = ({
   grid, buildings, gridSize, selectedBuilding, ghostPos, canPlaceGhost,
-  productionReady, animatedCitizens, complaints, studentId, district,
-  onTileClick, onTileHover, onBuildingClick,
+  productionReady, animatedCitizens, complaints, studentId, district, cooldownElements,
+  onTileClick, onTileHover, onBuildingClick, onTerrainClick,
 }: IsometricCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [camera, setCamera] = useState({ x: 0, y: 0 });
