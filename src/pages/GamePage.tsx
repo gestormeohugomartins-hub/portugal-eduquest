@@ -196,6 +196,9 @@ const GamePage = () => {
               district={studentData.district}
               schoolName={(studentData as any).school_name}
             />
+
+            {/* Achievements */}
+            <AchievementsPanel achievements={achievements} unlocked={unlocked} />
           </div>
         </SheetContent>
       </Sheet>
