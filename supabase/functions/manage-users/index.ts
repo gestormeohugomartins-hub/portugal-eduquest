@@ -217,6 +217,26 @@ serve(async (req) => {
       });
     }
 
+    // CONFIRM user email (force-confirm without email link)
+    if (action === "confirm") {
+      const { user_id } = params;
+      if (!user_id) {
+        return new Response(JSON.stringify({ error: "user_id required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error } = await supabase.auth.admin.updateUserById(user_id, {
+        email_confirm: true,
+      });
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Invalid action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
