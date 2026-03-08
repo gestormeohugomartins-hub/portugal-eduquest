@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { validatePassword } from "@/lib/passwordValidation";
 import { PasswordInput } from "@/components/PasswordInput";
 import { useNavigate, Link } from "react-router-dom";
