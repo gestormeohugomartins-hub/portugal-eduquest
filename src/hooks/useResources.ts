@@ -111,8 +111,9 @@ export function useResources(studentId: string | undefined, isPremium: boolean =
       return false;
     }
 
-    // Calculate random amount
-    const amount = info.amount[0] + Math.floor(Math.random() * (info.amount[1] - info.amount[0] + 1));
+    // Calculate random amount with premium bonus
+    const baseAmount = info.amount[0] + Math.floor(Math.random() * (info.amount[1] - info.amount[0] + 1));
+    const amount = isPremium ? Math.round(baseAmount * 1.15) : baseAmount;
 
     // Upsert resource
     const currentAmount = resources[info.resource];
