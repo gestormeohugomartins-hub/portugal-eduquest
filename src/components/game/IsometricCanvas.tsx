@@ -18,9 +18,11 @@ interface IsometricCanvasProps {
   complaints: Complaint[];
   studentId?: string;
   district?: string | null;
+  cooldownElements?: Set<number>;
   onTileClick: (gx: number, gy: number) => void;
   onTileHover: (gx: number, gy: number) => void;
   onBuildingClick: (building: PlacedBuilding) => void;
+  onTerrainClick?: (element: TerrainElement) => void;
 }
 
 const GRASS_COLORS = ['#4a7c3f', '#4e8243', '#467838', '#528645'];
