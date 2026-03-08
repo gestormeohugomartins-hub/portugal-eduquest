@@ -1,0 +1,206 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LogOut, Users, BookOpen, MessageCircle, Shield, Settings } from "lucide-react";
+import logo from "@/assets/logo.png";
+
+const ParentDashboard = () => {
+  const { user, profile, isParent, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [children, setChildren] = useState<any[]>([]);
+  const [authorizedEmails, setAuthorizedEmails] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!loading && !user) navigate("/login");
+    if (!loading && user && !isParent) navigate("/game");
+  }, [user, isParent, loading]);
+
+  useEffect(() => {
+    if (user) {
+      loadChildren();
+      loadAuthorizedEmails();
+    }
+  }, [user]);
+
+  const loadChildren = async () => {
+    const { data } = await supabase
+      .from("students")
+      .select("*")
+      .eq("parent_id", user!.id);
+    setChildren(data || []);
+  };
+
+  const loadAuthorizedEmails = async () => {
+    const { data } = await supabase
+      .from("authorized_emails")
+      .select("*")
+      .eq("parent_id", user!.id);
+    setAuthorizedEmails(data || []);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center parchment-bg">
+        <p className="font-display text-xl">A carregar...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen parchment-bg">
+      {/* Header */}
+      <div className="bg-card border-b-2 border-border px-4 py-3">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="EduQuest" className="w-10 h-10" />
+            <div>
+              <h1 className="font-display text-lg font-bold">Painel Parental</h1>
+              <p className="font-body text-xs text-muted-foreground">{profile?.display_name}</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/"); }}>
+            <LogOut className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-4xl mx-auto p-4">
+        <Tabs defaultValue="children">
+          <TabsList className="w-full grid grid-cols-4 mb-6">
+            <TabsTrigger value="children" className="font-body text-xs">
+              <Users className="w-4 h-4 mr-1" /> Educandos
+            </TabsTrigger>
+            <TabsTrigger value="progress" className="font-body text-xs">
+              <BookOpen className="w-4 h-4 mr-1" /> Progresso
+            </TabsTrigger>
+            <TabsTrigger value="social" className="font-body text-xs">
+              <MessageCircle className="w-4 h-4 mr-1" /> Social
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="font-body text-xs">
+              <Settings className="w-4 h-4 mr-1" /> Config
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="children">
+            <div className="space-y-4">
+              <h2 className="font-display text-xl font-bold">Os Seus Educandos</h2>
+              
+              {children.length === 0 ? (
+                <div className="game-border bg-card p-6 text-center">
+                  <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                  <p className="font-body text-muted-foreground">
+                    Nenhum educando registado ainda.
+                  </p>
+                  <p className="font-body text-sm text-muted-foreground mt-2">
+                    Os seus educandos precisam registar-se com um dos emails autorizados.
+                  </p>
+                </div>
+              ) : (
+                children.map(child => (
+                  <div key={child.id} className="game-border bg-card p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-body font-bold">{child.display_name}</h3>
+                        <p className="font-body text-sm text-muted-foreground">
+                          {child.school_year}º Ano • Nível {child.village_level}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 text-xs font-body">
+                        <span className="bg-gold/20 px-2 py-1 rounded">🪙 {child.coins}</span>
+                        <span className="bg-diamond/20 px-2 py-1 rounded">💎 {child.diamonds}</span>
+                        <span className="bg-citizen/20 px-2 py-1 rounded">👥 {child.citizens}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {/* Authorized Emails */}
+              <div className="mt-6">
+                <h3 className="font-display text-lg font-bold mb-3">Emails Autorizados</h3>
+                {authorizedEmails.length === 0 ? (
+                  <p className="font-body text-sm text-muted-foreground">Nenhum email autorizado.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {authorizedEmails.map(ae => (
+                      <div key={ae.id} className="flex items-center justify-between bg-card rounded-lg p-3 border border-border">
+                        <span className="font-body text-sm">{ae.email}</span>
+                        <span className={`text-xs font-body px-2 py-1 rounded ${ae.used ? "bg-secondary/20 text-secondary" : "bg-primary/20 text-primary"}`}>
+                          {ae.used ? "Registado" : "Pendente"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="progress">
+            <div className="game-border bg-card p-6 text-center">
+              <BookOpen className="w-12 h-12 mx-auto mb-3 text-accent" />
+              <h2 className="font-display text-xl font-bold mb-2">Evolução Escolar</h2>
+              <p className="font-body text-muted-foreground">
+                Acompanhe o desempenho dos seus educandos por disciplina.
+              </p>
+              {children.map(child => (
+                <div key={child.id} className="mt-4 parchment-bg rounded-lg p-4 text-left">
+                  <h3 className="font-body font-bold">{child.display_name}</h3>
+                  <p className="font-body text-sm text-muted-foreground">
+                    XP Total: {child.xp} • {child.school_year}º Ano
+                  </p>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="social">
+            <div className="game-border bg-card p-6 text-center">
+              <Shield className="w-12 h-12 mx-auto mb-3 text-secondary" />
+              <h2 className="font-display text-xl font-bold mb-2">Controlo Social</h2>
+              <p className="font-body text-muted-foreground">
+                Gerir amizades e monitorizar conversas dos seus educandos.
+              </p>
+              <p className="font-body text-sm text-muted-foreground mt-4">
+                Os pedidos de amizade dos seus educandos aparecerão aqui para aprovação.
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <div className="game-border bg-card p-6">
+              <h2 className="font-display text-xl font-bold mb-4">Configurações</h2>
+              <div className="space-y-4">
+                <div className="parchment-bg rounded-lg p-4">
+                  <h3 className="font-body font-bold mb-2">Prioridade de Disciplinas</h3>
+                  <p className="font-body text-sm text-muted-foreground">
+                    Defina qual disciplina deve ter mais incidência nas perguntas dos seus educandos.
+                    Por exemplo, se tem mais dificuldade em Português, defina Português como prioridade 1.
+                  </p>
+                  <p className="font-body text-xs text-muted-foreground mt-2">
+                    (As perguntas não ficam exclusivas — apenas com maior incidência)
+                  </p>
+                </div>
+                <div className="parchment-bg rounded-lg p-4">
+                  <h3 className="font-body font-bold mb-2">Informações da Conta</h3>
+                  <p className="font-body text-sm text-muted-foreground">
+                    Email: {profile?.email}
+                  </p>
+                  <p className="font-body text-sm text-muted-foreground">
+                    Distrito: {profile?.district || "Não definido"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+};
+
+export default ParentDashboard;
