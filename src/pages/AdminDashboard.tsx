@@ -3,35 +3,83 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Users, School, ShieldCheck, BarChart3, Building2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LogOut, Users, ShieldCheck, Building2, UserPlus, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 
 const AdminDashboard = () => {
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, session, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [associations, setAssociations] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [parents, setParents] = useState<any[]>([]);
+  const [adminRoles, setAdminRoles] = useState<any[]>([]);
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminRole, setNewAdminRole] = useState("admin");
   const [stats, setStats] = useState({ totalStudents: 0, totalParents: 0, totalAssociations: 0 });
 
-  // Simple admin check - in production use a proper admin role
-  const isAdmin = profile?.role === "parent" && profile?.email === "info@serv2all.pt";
-
+  // Check admin role from DB via edge function
   useEffect(() => {
-    if (!loading && !user) navigate("/login");
-    if (!loading && user && !isAdmin) {
-      toast.error("Acesso restrito a administradores.");
-      navigate("/");
+    if (!loading && !user) {
+      navigate("/login");
+      return;
     }
-  }, [user, loading, isAdmin]);
+    if (user && session) {
+      checkAdminRole();
+    }
+  }, [user, loading, session]);
 
-  useEffect(() => {
-    if (user && isAdmin) {
-      loadData();
+  const checkAdminRole = async () => {
+    try {
+      // Try to list admins - if it works, user is admin
+      const { data, error } = await supabase.functions.invoke("manage-admins", {
+        body: { action: "list" },
+      });
+
+      if (error) {
+        // Check if no admins exist (bootstrap scenario)
+        setIsAdmin(false);
+        return;
+      }
+
+      if (data?.roles) {
+        const userIsAdmin = data.roles.some((r: any) => r.user_id === user?.id);
+        if (userIsAdmin) {
+          setIsAdmin(true);
+          setAdminRoles(data.roles);
+          loadData();
+        } else if (data.roles.length === 0) {
+          // No admins exist - offer bootstrap
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(false);
+          toast.error("Acesso restrito a administradores.");
+          navigate("/");
+        }
+      }
+    } catch {
+      setIsAdmin(false);
     }
-  }, [user, isAdmin]);
+  };
+
+  const handleBootstrap = async () => {
+    const { data, error } = await supabase.functions.invoke("manage-admins", {
+      body: { action: "bootstrap" },
+    });
+
+    if (error || data?.error) {
+      toast.error(data?.error || "Erro ao configurar admin.");
+      return;
+    }
+
+    toast.success("Configurado como Super Admin!");
+    setIsAdmin(true);
+    checkAdminRole();
+  };
 
   const loadData = async () => {
     const [assocRes, studentsRes, parentsRes] = await Promise.all([
@@ -63,7 +111,38 @@ const AdminDashboard = () => {
     }
   };
 
-  if (loading) {
+  const handleAddAdmin = async () => {
+    if (!newAdminEmail.trim()) return;
+
+    const { data, error } = await supabase.functions.invoke("manage-admins", {
+      body: { action: "add", email: newAdminEmail.trim(), role: newAdminRole },
+    });
+
+    if (error || data?.error) {
+      toast.error(data?.error || "Erro ao adicionar admin.");
+      return;
+    }
+
+    toast.success(`Admin ${newAdminEmail} adicionado!`);
+    setNewAdminEmail("");
+    checkAdminRole();
+  };
+
+  const handleRemoveAdmin = async (email: string) => {
+    const { data, error } = await supabase.functions.invoke("manage-admins", {
+      body: { action: "remove", email },
+    });
+
+    if (error || data?.error) {
+      toast.error(data?.error || "Erro ao remover admin.");
+      return;
+    }
+
+    toast.success("Admin removido.");
+    checkAdminRole();
+  };
+
+  if (loading || isAdmin === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="font-display text-xl">A carregar...</p>
@@ -71,7 +150,29 @@ const AdminDashboard = () => {
     );
   }
 
-  if (!isAdmin) return null;
+  // Bootstrap screen - first admin setup
+  if (isAdmin === false && user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="max-w-md w-full text-center">
+          <img src={logo} alt="Questeduca" className="w-20 mx-auto mb-4" />
+          <h1 className="font-display text-2xl font-bold mb-2">Configuração Admin</h1>
+          <p className="font-body text-muted-foreground mb-6">
+            Não existem administradores configurados. Configurar esta conta como Super Admin?
+          </p>
+          <p className="font-body text-sm text-muted-foreground mb-4">
+            Logado como: <strong>{user.email}</strong>
+          </p>
+          <Button onClick={handleBootstrap} className="bg-primary text-primary-foreground font-bold">
+            <Shield className="w-4 h-4 mr-2" /> Configurar como Super Admin
+          </Button>
+          <Button variant="ghost" className="mt-3 w-full" onClick={() => navigate("/")}>
+            Voltar ao Início
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,7 +183,7 @@ const AdminDashboard = () => {
             <img src={logo} alt="Questeduca" className="w-10 h-10" />
             <div>
               <h1 className="font-display text-lg font-bold">Painel Administração</h1>
-              <p className="font-body text-xs text-muted-foreground">Questeduca Admin</p>
+              <p className="font-body text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={async () => { await signOut(); navigate("/"); }}>
@@ -112,7 +213,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="associations">
-          <TabsList className="w-full grid grid-cols-3 mb-6">
+          <TabsList className="w-full grid grid-cols-4 mb-6">
             <TabsTrigger value="associations" className="font-body text-xs">
               <Building2 className="w-4 h-4 mr-1" /> Associações
             </TabsTrigger>
@@ -121,6 +222,9 @@ const AdminDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="parents" className="font-body text-xs">
               <ShieldCheck className="w-4 h-4 mr-1" /> Pais
+            </TabsTrigger>
+            <TabsTrigger value="admins" className="font-body text-xs">
+              <Shield className="w-4 h-4 mr-1" /> Admins
             </TabsTrigger>
           </TabsList>
 
@@ -147,15 +251,15 @@ const AdminDashboard = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`text-xs font-body px-2 py-1 rounded ${
-                          a.status === "approved" ? "bg-green-100 text-green-700" :
-                          a.status === "rejected" ? "bg-red-100 text-red-700" :
-                          "bg-yellow-100 text-yellow-700"
+                          a.status === "approved" ? "bg-secondary/20 text-secondary" :
+                          a.status === "rejected" ? "bg-destructive/20 text-destructive" :
+                          "bg-accent/20 text-accent-foreground"
                         }`}>
                           {a.status === "approved" ? "Aprovada" : a.status === "rejected" ? "Rejeitada" : "Pendente"}
                         </span>
                         {a.status === "pending" && (
                           <>
-                            <Button size="sm" onClick={() => handleAssociationStatus(a.id, "approved")} className="bg-green-600 text-white text-xs">
+                            <Button size="sm" onClick={() => handleAssociationStatus(a.id, "approved")} className="bg-secondary text-secondary-foreground text-xs">
                               Aprovar
                             </Button>
                             <Button size="sm" variant="destructive" onClick={() => handleAssociationStatus(a.id, "rejected")} className="text-xs">
@@ -234,6 +338,72 @@ const AdminDashboard = () => {
                   </table>
                 </div>
               )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="admins">
+            <div className="space-y-6">
+              <h2 className="font-display text-xl font-bold">Gestão de Administradores</h2>
+              
+              {/* Add new admin */}
+              <div className="bg-card rounded-xl border border-border p-4">
+                <h3 className="font-body font-bold mb-3">Adicionar Novo Admin</h3>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Input
+                    type="email"
+                    placeholder="Email do utilizador"
+                    value={newAdminEmail}
+                    onChange={(e) => setNewAdminEmail(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Select value={newAdminRole} onValueChange={setNewAdminRole}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleAddAdmin} className="bg-primary text-primary-foreground">
+                    <UserPlus className="w-4 h-4 mr-1" /> Adicionar
+                  </Button>
+                </div>
+                <p className="font-body text-xs text-muted-foreground mt-2">
+                  O utilizador precisa estar registado primeiro. Super Admins podem gerir outros admins.
+                </p>
+              </div>
+
+              {/* Current admins */}
+              <div className="space-y-2">
+                <h3 className="font-body font-bold">Admins Atuais</h3>
+                {adminRoles.length === 0 ? (
+                  <p className="font-body text-muted-foreground">Nenhum admin configurado.</p>
+                ) : (
+                  adminRoles.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between bg-card rounded-lg border border-border p-3">
+                      <div>
+                        <span className="font-body font-semibold">{r.email}</span>
+                        <span className={`ml-2 text-xs px-2 py-0.5 rounded ${
+                          r.role === "super_admin" ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                        }`}>
+                          {r.role === "super_admin" ? "Super Admin" : "Admin"}
+                        </span>
+                      </div>
+                      {r.user_id !== user?.id && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleRemoveAdmin(r.email)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </TabsContent>
         </Tabs>
