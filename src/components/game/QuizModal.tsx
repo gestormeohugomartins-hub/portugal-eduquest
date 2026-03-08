@@ -158,8 +158,8 @@ export const QuizModal = ({ student, onClose }: QuizModalProps) => {
   // Free cap reached
   if (atCap) {
     return (
-      <div className="fixed inset-0 bg-foreground/60 z-[60] flex items-center justify-center px-4">
-        <div className="w-full max-w-lg game-border p-6 bg-card relative animate-slide-up">
+      <div className="fixed inset-0 bg-foreground/60 z-[60] flex items-end sm:items-center justify-center px-0 sm:px-4">
+        <div className="w-full sm:max-w-lg game-border p-4 sm:p-6 bg-card relative animate-slide-up rounded-t-2xl sm:rounded-xl">
           <Button variant="ghost" size="sm" className="absolute top-2 right-2" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
