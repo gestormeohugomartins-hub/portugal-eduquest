@@ -517,18 +517,15 @@ const ParentDashboard = () => {
           </TabsContent>
 
           <TabsContent value="settings">
-            <div className="game-border bg-card p-6">
-              <h2 className="font-display text-xl font-bold mb-4">Configurações</h2>
-              <div className="space-y-4">
-                <div className="parchment-bg rounded-lg p-4">
-                  <h3 className="font-body font-bold mb-2">Prioridade de Disciplinas</h3>
-                  <p className="font-body text-sm text-muted-foreground">
-                    Defina qual disciplina deve ter mais incidência nas perguntas dos seus educandos.
-                  </p>
-                  <p className="font-body text-xs text-muted-foreground mt-2">
-                    (As perguntas não ficam exclusivas — apenas com maior incidência)
-                  </p>
+            <div className="space-y-4">
+              <div className="game-border bg-card p-6">
+                <h2 className="font-display text-xl font-bold mb-4">Configurações</h2>
+
+                {/* Accessibility Settings */}
+                <div className="parchment-bg rounded-lg p-4 mb-4">
+                  <AccessibilitySettings userId={user!.id} table="profiles" />
                 </div>
+
                 <div className="parchment-bg rounded-lg p-4">
                   <h3 className="font-body font-bold mb-2">Informações da Conta</h3>
                   <p className="font-body text-sm text-muted-foreground mb-3">
