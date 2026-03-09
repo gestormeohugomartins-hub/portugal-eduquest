@@ -13,6 +13,8 @@ import { PromoCodesTab } from "@/components/admin/PromoCodesTab";
 import { GrantPremiumTab } from "@/components/admin/GrantPremiumTab";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
+import { AccessibilityWrapper } from "@/components/accessibility/AccessibilityWrapper";
+import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
 
 interface AdminUser {
   id: string;
