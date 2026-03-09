@@ -25,19 +25,7 @@ export default function ImportSchoolsPage() {
       setProgress(5);
       const csvText = await file.text();
 
-      // Step 2: Delete existing schools
-      setStatus("A limpar escolas existentes...");
-      setProgress(10);
-      const { error: delErr } = await supabase.functions.invoke('import-schools-temp', {
-        body: { action: 'delete_all' },
-      });
-      if (delErr) {
-        toast.error("Erro ao limpar escolas: " + delErr.message);
-        setImporting(false);
-        return;
-      }
-
-      // Step 3: Import in batches via loop
+      // Step 2: Import in batches via loop
       let offset = 0;
       let totalInserted = 0;
       let totalErrors = 0;
