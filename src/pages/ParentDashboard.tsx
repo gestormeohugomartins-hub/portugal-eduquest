@@ -11,6 +11,10 @@ import { LogOut, Users, BookOpen, MessageCircle, Shield, Settings, Plus, Trash2,
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 import { PremiumModal } from "@/components/game/PremiumModal";
+import { AccessibilityWrapper } from "@/components/accessibility/AccessibilityWrapper";
+import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+import { ChatMonitor } from "@/components/parent/ChatMonitor";
+import { SubjectPriorityManager } from "@/components/parent/SubjectPriorityManager";
 
 const schoolYears = [
   { value: "1", label: "1º Ano" },
