@@ -836,7 +836,8 @@ const AdminDashboard = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
+  </AccessibilityWrapper>
+);
 };
 
 export default AdminDashboard;
