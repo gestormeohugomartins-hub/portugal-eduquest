@@ -15,6 +15,7 @@ import { AccessibilityWrapper } from "@/components/accessibility/AccessibilityWr
 import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
 import { ChatMonitor } from "@/components/parent/ChatMonitor";
 import { SubjectPriorityManager } from "@/components/parent/SubjectPriorityManager";
+import { SchoolSelector } from "@/components/parent/SchoolSelector";
 
 const schoolYears = [
   { value: "1", label: "1º Ano" },
