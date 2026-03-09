@@ -164,7 +164,7 @@ const GamePage = () => {
       />
 
       {/* Side Menu */}
-      <Sheet>
+      <Sheet open={sideMenuOpen} onOpenChange={setSideMenuOpen}>
         <SheetTrigger asChild>
           <Button 
             variant="outline" 
