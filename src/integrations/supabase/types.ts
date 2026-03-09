@@ -1031,6 +1031,7 @@ export type Database = {
           created_at: string | null
           district: string
           id: string
+          locality: string | null
           municipality: string | null
           name: string
           school_group: string | null
@@ -1039,6 +1040,7 @@ export type Database = {
           created_at?: string | null
           district: string
           id?: string
+          locality?: string | null
           municipality?: string | null
           name: string
           school_group?: string | null
@@ -1047,6 +1049,7 @@ export type Database = {
           created_at?: string | null
           district?: string
           id?: string
+          locality?: string | null
           municipality?: string | null
           name?: string
           school_group?: string | null
