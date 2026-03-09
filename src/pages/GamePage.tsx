@@ -152,7 +152,8 @@ const GamePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <AccessibilityWrapper studentId={studentData.id}>
+      <div className="min-h-screen bg-background relative overflow-hidden">
       <GameHUD
         student={studentData}
         notifications={notifications}
