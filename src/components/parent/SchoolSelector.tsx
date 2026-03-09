@@ -41,11 +41,13 @@ const districts = [
 export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
   const [schools, setSchools] = useState<School[]>([]);
   const [filteredMunicipalities, setFilteredMunicipalities] = useState<string[]>([]);
+  const [filteredLocalities, setFilteredLocalities] = useState<string[]>([]);
   const [filteredSchools, setFilteredSchools] = useState<School[]>([]);
   const [saving, setSaving] = useState<string | null>(null);
   const [childSchools, setChildSchools] = useState<Record<string, { 
     selectedDistrict: string; 
-    selectedMunicipality: string; 
+    selectedMunicipality: string;
+    selectedLocality: string;
     selectedSchool: string;
   }>>({});
 
