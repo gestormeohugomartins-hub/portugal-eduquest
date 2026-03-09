@@ -16,6 +16,7 @@ import { AchievementsPanel } from "@/components/game/AchievementsPanel";
 import { SettingsPanel } from "@/components/game/SettingsPanel";
 import { useAchievements } from "@/hooks/useAchievements";
 import { useNotifications } from "@/hooks/useNotifications";
+import { AccessibilityWrapper } from "@/components/accessibility/AccessibilityWrapper";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -151,7 +152,8 @@ const GamePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <AccessibilityWrapper studentId={studentData.id}>
+      <div className="min-h-screen bg-background relative overflow-hidden">
       <GameHUD
         student={studentData}
         notifications={notifications}
@@ -332,7 +334,8 @@ const GamePage = () => {
         onTestComplete={handleClaimMissionReward}
         onStartTest={handleMonthlyTestStart}
       />
-    </div>
+      </div>
+    </AccessibilityWrapper>
   );
 };
 

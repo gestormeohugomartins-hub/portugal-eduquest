@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Nunito:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=OpenDyslexic:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -119,6 +120,32 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Accessibility styles */
+  .accessibility-dyslexia * {
+    font-family: 'OpenDyslexic', Arial, sans-serif !important;
+    letter-spacing: 0.1em !important;
+    word-spacing: 0.15em !important;
+    line-height: 1.6 !important;
+  }
+
+  .accessibility-text-highlight {
+    background-color: hsl(var(--accent) / 0.2) !important;
+    outline: 2px solid hsl(var(--accent)) !important;
+    outline-offset: 2px !important;
+  }
+
+  .accessibility-colorblind-protanopia {
+    filter: url(#protanopia);
+  }
+
+  .accessibility-colorblind-deuteranopia {
+    filter: url(#deuteranopia);
+  }
+
+  .accessibility-colorblind-tritanopia {
+    filter: url(#tritanopia);
   }
 }
 
