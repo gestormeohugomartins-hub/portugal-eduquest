@@ -1100,6 +1100,9 @@ export type Database = {
       }
       students: {
         Row: {
+          accessibility_colorblind_filter: string | null
+          accessibility_dyslexia: boolean | null
+          accessibility_magnifier: boolean | null
           annual_bonus_building: string | null
           association_code: string | null
           association_code_set_at: string | null
@@ -1129,6 +1132,9 @@ export type Database = {
           xp: number
         }
         Insert: {
+          accessibility_colorblind_filter?: string | null
+          accessibility_dyslexia?: boolean | null
+          accessibility_magnifier?: boolean | null
           annual_bonus_building?: string | null
           association_code?: string | null
           association_code_set_at?: string | null
@@ -1158,6 +1164,9 @@ export type Database = {
           xp?: number
         }
         Update: {
+          accessibility_colorblind_filter?: string | null
+          accessibility_dyslexia?: boolean | null
+          accessibility_magnifier?: boolean | null
           annual_bonus_building?: string | null
           association_code?: string | null
           association_code_set_at?: string | null
