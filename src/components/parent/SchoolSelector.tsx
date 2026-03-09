@@ -41,8 +41,9 @@ const districts = [
 export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
   const [saving, setSaving] = useState<string | null>(null);
   const [childState, setChildState] = useState<Record<string, { district: string; schoolId: string }>>({});
-  const [filteredSchools, setFilteredSchools] = useState<School[]>([]);
+  const [allSchools, setAllSchools] = useState<School[]>([]);
   const [loadingSchools, setLoadingSchools] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const init: Record<string, { district: string; schoolId: string }> = {};
