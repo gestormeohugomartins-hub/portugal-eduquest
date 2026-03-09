@@ -53,8 +53,21 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Import from URL
+    if (action === 'import_from_url' && body.url) {
+      const csvResponse = await fetch(body.url);
+      if (!csvResponse.ok) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to fetch CSV from URL: ' + csvResponse.status }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      body.csvText = await csvResponse.text();
+      console.log('Fetched CSV, length:', body.csvText.length);
+    }
+
     // Full CSV import server-side
-    if (action === 'import_csv' && body.csvText) {
+    if ((action === 'import_csv' || action === 'import_from_url') && body.csvText) {
       const lines = body.csvText.split('\n');
       const schools: { name: string; district: string }[] = [];
       
