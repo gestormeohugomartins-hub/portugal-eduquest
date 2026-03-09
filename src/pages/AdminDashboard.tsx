@@ -494,7 +494,7 @@ const AdminDashboard = () => {
 
         <Tabs defaultValue="users">
           <div className="overflow-x-auto -mx-4 px-4 mb-6">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-6 sm:w-full">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-7 sm:w-full">
               <TabsTrigger value="users" className="font-body text-xs gap-1 whitespace-nowrap">
                 <Users className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Utilizadores</span><span className="sm:hidden">Users</span>
               </TabsTrigger>
@@ -512,6 +512,9 @@ const AdminDashboard = () => {
               </TabsTrigger>
               <TabsTrigger value="admins" className="font-body text-xs gap-1 whitespace-nowrap">
                 <Shield className="w-3.5 h-3.5" /> Admins
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="font-body text-xs gap-1 whitespace-nowrap">
+                <Eye className="w-3.5 h-3.5" /> Config
               </TabsTrigger>
             </TabsList>
           </div>
