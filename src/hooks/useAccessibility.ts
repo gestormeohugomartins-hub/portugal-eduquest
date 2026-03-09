@@ -7,7 +7,7 @@ interface AccessibilitySettings {
   colorblindFilter: string | null;
 }
 
-export const useAccessibility = (studentId?: string) => {
+export const useAccessibility = ({ studentId, userId }: { studentId?: string; userId?: string } = {}) => {
   const [settings, setSettings] = useState<AccessibilitySettings>({
     magnifierEnabled: false,
     dyslexiaEnabled: false,
@@ -15,21 +15,28 @@ export const useAccessibility = (studentId?: string) => {
   });
 
   useEffect(() => {
-    if (!studentId) return;
+    if (!studentId && !userId) return;
 
     const fetchSettings = async () => {
-      const { data, error } = await supabase
-        .from("students")
-        .select("accessibility_magnifier, accessibility_dyslexia, accessibility_colorblind_filter")
-        .eq("id", studentId)
-        .single();
-
-      if (error) {
-        console.error("Error fetching accessibility settings:", error);
-        return;
-      }
-
-      if (data) {
+      if (studentId) {
+        const { data, error } = await supabase
+          .from("students")
+          .select("accessibility_magnifier, accessibility_dyslexia, accessibility_colorblind_filter")
+          .eq("id", studentId)
+          .single();
+        if (error || !data) return;
+        setSettings({
+          magnifierEnabled: data.accessibility_magnifier || false,
+          dyslexiaEnabled: data.accessibility_dyslexia || false,
+          colorblindFilter: data.accessibility_colorblind_filter,
+        });
+      } else if (userId) {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("accessibility_magnifier, accessibility_dyslexia, accessibility_colorblind_filter")
+          .eq("user_id", userId)
+          .single();
+        if (error || !data) return;
         setSettings({
           magnifierEnabled: data.accessibility_magnifier || false,
           dyslexiaEnabled: data.accessibility_dyslexia || false,
@@ -39,34 +46,15 @@ export const useAccessibility = (studentId?: string) => {
     };
 
     fetchSettings();
-  }, [studentId]);
+  }, [studentId, userId]);
 
-  // Apply accessibility classes to body
   useEffect(() => {
     const body = document.body;
-    
-    // Remove existing classes
-    body.classList.remove('accessibility-dyslexia');
-    body.classList.remove('accessibility-colorblind-protanopia');
-    body.classList.remove('accessibility-colorblind-deuteranopia');
-    body.classList.remove('accessibility-colorblind-tritanopia');
-
-    // Apply dyslexia class if enabled
-    if (settings.dyslexiaEnabled) {
-      body.classList.add('accessibility-dyslexia');
-    }
-
-    // Apply colorblind filter if set
-    if (settings.colorblindFilter) {
-      body.classList.add(`accessibility-colorblind-${settings.colorblindFilter}`);
-    }
-
+    body.classList.remove('accessibility-dyslexia', 'accessibility-colorblind-protanopia', 'accessibility-colorblind-deuteranopia', 'accessibility-colorblind-tritanopia');
+    if (settings.dyslexiaEnabled) body.classList.add('accessibility-dyslexia');
+    if (settings.colorblindFilter) body.classList.add(`accessibility-colorblind-${settings.colorblindFilter}`);
     return () => {
-      // Cleanup on unmount
-      body.classList.remove('accessibility-dyslexia');
-      body.classList.remove('accessibility-colorblind-protanopia');
-      body.classList.remove('accessibility-colorblind-deuteranopia');
-      body.classList.remove('accessibility-colorblind-tritanopia');
+      body.classList.remove('accessibility-dyslexia', 'accessibility-colorblind-protanopia', 'accessibility-colorblind-deuteranopia', 'accessibility-colorblind-tritanopia');
     };
   }, [settings.dyslexiaEnabled, settings.colorblindFilter]);
 
