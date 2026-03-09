@@ -11,6 +11,7 @@ interface School {
   name: string;
   district: string;
   municipality: string | null;
+  locality: string | null;
 }
 
 interface Student {
