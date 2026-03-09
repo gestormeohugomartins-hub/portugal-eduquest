@@ -440,10 +440,15 @@ const ParentDashboard = () => {
                 ))}
               </div>
 
-              {/* Subject Priority Manager */}
-              <div className="game-border bg-card p-4">
-                <SubjectPriorityManager parentId={user!.id} children={children} />
-              </div>
+                {/* Subject Priority Manager */}
+                <div className="game-border bg-card p-4">
+                  <SubjectPriorityManager parentId={user!.id} children={children} />
+                </div>
+
+                {/* School Selection */}
+                <div className="game-border bg-card p-4">
+                  <SchoolSelector children={children} onUpdate={loadChildren} />
+                </div>
             </div>
           </TabsContent>
 

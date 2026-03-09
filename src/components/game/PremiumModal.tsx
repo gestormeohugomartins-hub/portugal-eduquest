@@ -252,7 +252,10 @@ export const PremiumModal = ({ open, onOpenChange, studentId, isPremium, associa
                 </div>
               ) : (
                 <p className="font-body text-xs text-muted-foreground">
-                  O prazo de 30 dias para inserir o código expirou.
+                  {isPremium 
+                    ? "Já tem um código de associação ativo."
+                    : "O prazo de 30 dias para inserir o código expirou. Ative o Premium para poder inserir o código."
+                  }
                 </p>
               )}
               <p className="font-body text-xs text-muted-foreground mt-1">
