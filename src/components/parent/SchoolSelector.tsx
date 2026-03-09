@@ -92,15 +92,32 @@ export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
   };
 
   const handleMunicipalityChange = (childId: string, municipality: string) => {
-    const newState = { ...childSchools[childId], selectedMunicipality: municipality, selectedSchool: "" };
+    const newState = { ...childSchools[childId], selectedMunicipality: municipality, selectedLocality: "", selectedSchool: "" };
+    setChildSchools(prev => ({ ...prev, [childId]: newState }));
+    
+    // Update localities list
+    const currentDistrict = childSchools[childId]?.selectedDistrict || "";
+    const municipalitySchools = schools.filter(s => 
+      s.district === currentDistrict && s.municipality === municipality
+    );
+    const localities = [...new Set(municipalitySchools.map(s => s.locality).filter(Boolean))].sort();
+    setFilteredLocalities(localities);
+    setFilteredSchools([]);
+  };
+
+  const handleLocalityChange = (childId: string, locality: string) => {
+    const newState = { ...childSchools[childId], selectedLocality: locality, selectedSchool: "" };
     setChildSchools(prev => ({ ...prev, [childId]: newState }));
     
     // Update schools list
     const currentDistrict = childSchools[childId]?.selectedDistrict || "";
-    const municipalitySchools = schools.filter(s => 
-      s.district === currentDistrict && s.municipality === municipality
+    const currentMunicipality = childSchools[childId]?.selectedMunicipality || "";
+    const localitySchools = schools.filter(s => 
+      s.district === currentDistrict && 
+      s.municipality === currentMunicipality && 
+      s.locality === locality
     ).sort((a, b) => a.name.localeCompare(b.name));
-    setFilteredSchools(municipalitySchools);
+    setFilteredSchools(localitySchools);
   };
 
   const handleSchoolChange = (childId: string, schoolId: string) => {
