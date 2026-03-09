@@ -454,7 +454,8 @@ const AdminDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <AccessibilityWrapper userId={currentUser?.id}>
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-card border-b-2 border-border px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
