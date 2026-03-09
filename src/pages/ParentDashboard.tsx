@@ -578,7 +578,8 @@ const ParentDashboard = () => {
           subscriptionType={premiumChild.subscription_type}
         />
       )}
-    </div>
+      </div>
+    </AccessibilityWrapper>
   );
 };
 
