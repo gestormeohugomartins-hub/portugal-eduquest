@@ -89,19 +89,8 @@ export default function ImportSchoolsPage() {
         return;
       }
 
-      setStatus(`Encontradas ${schools.length} escolas. A limpar dados antigos...`);
+      setStatus(`Encontradas ${schools.length} escolas. A iniciar importação...`);
       setProgress(5);
-
-      // Step 2: Delete existing schools via edge function
-      const { error: deleteError } = await supabase.functions.invoke('import-schools-temp', {
-        body: { action: 'delete' },
-      });
-
-      if (deleteError) {
-        console.error('Delete error:', deleteError);
-      }
-
-      setProgress(10);
       setStatus(`A importar ${schools.length} escolas em lotes...`);
 
       // Step 3: Insert in batches of 500
