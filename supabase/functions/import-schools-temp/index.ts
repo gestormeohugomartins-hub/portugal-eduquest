@@ -37,19 +37,6 @@ Deno.serve(async (req) => {
 
     const { action, csvText, offset } = await req.json();
 
-    // Delete all schools
-    if (action === 'delete_all') {
-      const { error } = await supabase.from('schools').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      if (error) throw error;
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    // Insert a pre-parsed batch
-    if (action === 'insert_batch') {
-      const { schools } = await req.json().catch(() => ({ schools: [] }));
-      // schools is passed in body
-    }
-
     // Parse CSV and insert one batch at a time (called repeatedly from frontend)
     if (action === 'import_batch' && csvText) {
       const batchSize = 300;
