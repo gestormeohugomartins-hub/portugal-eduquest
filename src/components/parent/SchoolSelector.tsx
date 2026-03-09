@@ -11,6 +11,7 @@ interface School {
   name: string;
   district: string;
   municipality: string | null;
+  locality: string | null;
 }
 
 interface Student {
@@ -41,11 +42,13 @@ const districts = [
 export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
   const [schools, setSchools] = useState<School[]>([]);
   const [filteredMunicipalities, setFilteredMunicipalities] = useState<string[]>([]);
+  const [filteredLocalities, setFilteredLocalities] = useState<string[]>([]);
   const [filteredSchools, setFilteredSchools] = useState<School[]>([]);
   const [saving, setSaving] = useState<string | null>(null);
   const [childSchools, setChildSchools] = useState<Record<string, { 
     selectedDistrict: string; 
-    selectedMunicipality: string; 
+    selectedMunicipality: string;
+    selectedLocality: string;
     selectedSchool: string;
   }>>({});
 
@@ -63,13 +66,14 @@ export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
   };
 
   const initializeChildSchools = () => {
-    const initialStates: Record<string, { selectedDistrict: string; selectedMunicipality: string; selectedSchool: string }> = {};
+    const initialStates: Record<string, { selectedDistrict: string; selectedMunicipality: string; selectedLocality: string; selectedSchool: string }> = {};
     children.forEach(child => {
       // Find current school info if exists
       const currentSchool = schools.find(s => s.id === child.school_id);
       initialStates[child.id] = {
         selectedDistrict: currentSchool?.district || "",
         selectedMunicipality: currentSchool?.municipality || "",
+        selectedLocality: currentSchool?.locality || "",
         selectedSchool: child.school_id || "",
       };
     });
@@ -77,26 +81,44 @@ export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
   };
 
   const handleDistrictChange = (childId: string, district: string) => {
-    const newState = { ...childSchools[childId], selectedDistrict: district, selectedMunicipality: "", selectedSchool: "" };
+    const newState = { ...childSchools[childId], selectedDistrict: district, selectedMunicipality: "", selectedLocality: "", selectedSchool: "" };
     setChildSchools(prev => ({ ...prev, [childId]: newState }));
     
     // Update municipalities list
     const districtSchools = schools.filter(s => s.district === district);
     const municipalities = [...new Set(districtSchools.map(s => s.municipality).filter(Boolean))].sort();
     setFilteredMunicipalities(municipalities);
+    setFilteredLocalities([]);
     setFilteredSchools([]);
   };
 
   const handleMunicipalityChange = (childId: string, municipality: string) => {
-    const newState = { ...childSchools[childId], selectedMunicipality: municipality, selectedSchool: "" };
+    const newState = { ...childSchools[childId], selectedMunicipality: municipality, selectedLocality: "", selectedSchool: "" };
+    setChildSchools(prev => ({ ...prev, [childId]: newState }));
+    
+    // Update localities list
+    const currentDistrict = childSchools[childId]?.selectedDistrict || "";
+    const municipalitySchools = schools.filter(s => 
+      s.district === currentDistrict && s.municipality === municipality
+    );
+    const localities = [...new Set(municipalitySchools.map(s => s.locality).filter(Boolean))].sort();
+    setFilteredLocalities(localities);
+    setFilteredSchools([]);
+  };
+
+  const handleLocalityChange = (childId: string, locality: string) => {
+    const newState = { ...childSchools[childId], selectedLocality: locality, selectedSchool: "" };
     setChildSchools(prev => ({ ...prev, [childId]: newState }));
     
     // Update schools list
     const currentDistrict = childSchools[childId]?.selectedDistrict || "";
-    const municipalitySchools = schools.filter(s => 
-      s.district === currentDistrict && s.municipality === municipality
+    const currentMunicipality = childSchools[childId]?.selectedMunicipality || "";
+    const localitySchools = schools.filter(s => 
+      s.district === currentDistrict && 
+      s.municipality === currentMunicipality && 
+      s.locality === locality
     ).sort((a, b) => a.name.localeCompare(b.name));
-    setFilteredSchools(municipalitySchools);
+    setFilteredSchools(localitySchools);
   };
 
   const handleSchoolChange = (childId: string, schoolId: string) => {
@@ -153,7 +175,7 @@ export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
             </p>
           )}
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
             <div>
               <Label className="text-xs font-medium">Distrito</Label>
               <Select 
@@ -172,14 +194,14 @@ export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
             </div>
             
             <div>
-              <Label className="text-xs font-medium">Município</Label>
+              <Label className="text-xs font-medium">Concelho</Label>
               <Select 
                 value={childSchools[child.id]?.selectedMunicipality || ""} 
                 onValueChange={(value) => handleMunicipalityChange(child.id, value)}
                 disabled={!childSchools[child.id]?.selectedDistrict}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Escolha o município" />
+                  <SelectValue placeholder="Escolha o concelho" />
                 </SelectTrigger>
                 <SelectContent>
                   {filteredMunicipalities.map(m => (
@@ -190,11 +212,29 @@ export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
             </div>
             
             <div>
+              <Label className="text-xs font-medium">Localidade</Label>
+              <Select 
+                value={childSchools[child.id]?.selectedLocality || ""} 
+                onValueChange={(value) => handleLocalityChange(child.id, value)}
+                disabled={!childSchools[child.id]?.selectedMunicipality}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Escolha a localidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredLocalities.map(l => (
+                    <SelectItem key={l} value={l}>{l}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
               <Label className="text-xs font-medium">Escola</Label>
               <Select 
                 value={childSchools[child.id]?.selectedSchool || ""} 
                 onValueChange={(value) => handleSchoolChange(child.id, value)}
-                disabled={!childSchools[child.id]?.selectedMunicipality}
+                disabled={!childSchools[child.id]?.selectedLocality}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Escolha a escola" />
