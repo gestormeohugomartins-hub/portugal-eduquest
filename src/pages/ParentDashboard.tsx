@@ -15,7 +15,6 @@ import { AccessibilityWrapper } from "@/components/accessibility/AccessibilityWr
 import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
 import { ChatMonitor } from "@/components/parent/ChatMonitor";
 import { SubjectPriorityManager } from "@/components/parent/SubjectPriorityManager";
-import { SubjectPriorityManager } from "@/components/parent/SubjectPriorityManager";
 import { SchoolSelector } from "@/components/parent/SchoolSelector";
 import { AccessibilityManager } from "@/components/parent/AccessibilityManager";
 
