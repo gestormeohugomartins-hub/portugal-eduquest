@@ -65,13 +65,14 @@ export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
   };
 
   const initializeChildSchools = () => {
-    const initialStates: Record<string, { selectedDistrict: string; selectedMunicipality: string; selectedSchool: string }> = {};
+    const initialStates: Record<string, { selectedDistrict: string; selectedMunicipality: string; selectedLocality: string; selectedSchool: string }> = {};
     children.forEach(child => {
       // Find current school info if exists
       const currentSchool = schools.find(s => s.id === child.school_id);
       initialStates[child.id] = {
         selectedDistrict: currentSchool?.district || "",
         selectedMunicipality: currentSchool?.municipality || "",
+        selectedLocality: currentSchool?.locality || "",
         selectedSchool: child.school_id || "",
       };
     });
