@@ -51,6 +51,7 @@ const App = () => (
             <Route path="/administratorquest" element={<AdminDashboard />} />
             <Route path="/install" element={<InstallPage />} />
             <Route path="/association" element={<AssociationDashboard />} />
+            <Route path="/import-schools" element={<ImportSchoolsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
