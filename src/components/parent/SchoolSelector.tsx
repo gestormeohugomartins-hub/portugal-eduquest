@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Save, Loader2 } from "lucide-react";
+import { MapPin, Save, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 interface School {
@@ -40,8 +41,9 @@ const districts = [
 export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
   const [saving, setSaving] = useState<string | null>(null);
   const [childState, setChildState] = useState<Record<string, { district: string; schoolId: string }>>({});
-  const [filteredSchools, setFilteredSchools] = useState<School[]>([]);
+  const [allSchools, setAllSchools] = useState<School[]>([]);
   const [loadingSchools, setLoadingSchools] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const init: Record<string, { district: string; schoolId: string }> = {};
@@ -53,6 +55,7 @@ export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
 
   const handleDistrictChange = async (childId: string, district: string) => {
     setChildState(prev => ({ ...prev, [childId]: { district, schoolId: "" } }));
+    setSearchQuery(prev => ({ ...prev, [childId]: "" }));
     setLoadingSchools(true);
     
     const { data } = await supabase
@@ -61,7 +64,7 @@ export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
       .eq("district", district)
       .order("name");
     
-    setFilteredSchools(data || []);
+    setAllSchools(data || []);
     setLoadingSchools(false);
   };
 
@@ -69,12 +72,22 @@ export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
     setChildState(prev => ({ ...prev, [childId]: { ...prev[childId], schoolId } }));
   };
 
+  const getFilteredSchools = (childId: string) => {
+    const query = (searchQuery[childId] || "").toLowerCase().trim();
+    if (!query) return allSchools;
+    const keywords = query.split(/\s+/);
+    return allSchools.filter(s => {
+      const name = s.name.toLowerCase();
+      return keywords.every(kw => name.includes(kw));
+    });
+  };
+
   const handleSave = async (childId: string) => {
     const state = childState[childId];
     if (!state?.schoolId) { toast.error("Selecione uma escola"); return; }
 
     setSaving(childId);
-    const school = filteredSchools.find(s => s.id === state.schoolId);
+    const school = allSchools.find(s => s.id === state.schoolId);
     const { error } = await supabase
       .from("students")
       .update({ school_id: state.schoolId, school_name: school?.name || null })
@@ -120,6 +133,23 @@ export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
             </div>
             
             <div>
+              <Label className="text-xs font-medium">Pesquisar escola</Label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Palavras-chave..."
+                  value={searchQuery[child.id] || ""}
+                  onChange={(e) => {
+                    setSearchQuery(prev => ({ ...prev, [child.id]: e.target.value }));
+                    setChildState(prev => ({ ...prev, [child.id]: { ...prev[child.id], schoolId: "" } }));
+                  }}
+                  disabled={!childState[child.id]?.district || loadingSchools}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+
+            <div className="md:col-span-2">
               <Label className="text-xs font-medium">Escola</Label>
               <Select 
                 value={childState[child.id]?.schoolId || ""} 
@@ -130,7 +160,7 @@ export const SchoolSelector = ({ children, onUpdate }: SchoolSelectorProps) => {
                   <SelectValue placeholder={loadingSchools ? "A carregar..." : "Escolha a escola"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredSchools.map(s => (
+                  {getFilteredSchools(child.id).map(s => (
                     <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                   ))}
                 </SelectContent>
