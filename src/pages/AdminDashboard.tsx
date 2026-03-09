@@ -765,6 +765,16 @@ const AdminDashboard = () => {
               )}
             </div>
           </TabsContent>
+
+          {/* SETTINGS TAB */}
+          <TabsContent value="settings">
+            <div className="max-w-lg">
+              <h2 className="font-display text-xl font-bold mb-4">Configurações Pessoais</h2>
+              <div className="bg-card rounded-xl border border-border p-6">
+                <AccessibilitySettings userId={currentUser!.id} table="profiles" />
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
