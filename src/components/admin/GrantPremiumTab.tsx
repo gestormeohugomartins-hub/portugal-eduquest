@@ -25,6 +25,7 @@ export const GrantPremiumTab = () => {
 
     setGranting(true);
     try {
+      console.log("[GrantPremium] Invoking manage-users with grant_premium", { email: applyToAll ? "ALL" : email.trim().toLowerCase(), months: m });
       const { data, error } = await supabase.functions.invoke("manage-users", {
         body: {
           action: "grant_premium",
@@ -34,6 +35,7 @@ export const GrantPremiumTab = () => {
         },
       });
 
+      console.log("[GrantPremium] Response:", { data, error });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
