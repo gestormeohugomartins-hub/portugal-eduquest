@@ -429,9 +429,10 @@ const AdminDashboard = () => {
           <Button size="sm" variant="ghost" onClick={() => openEdit(u)} title="Editar">
             <Pencil className="w-3 h-3" />
           </Button>
-          {u.email_confirmed === false && (
-            <Button size="sm" variant="ghost" onClick={() => handleConfirmEmail(u.id)} title="Confirmar email" className="text-accent">
-              <MailCheck className="w-3 h-3" />
+          {!u.email_confirmed && (
+            <Button size="sm" variant="outline" onClick={() => handleConfirmEmail(u.id)} title="Validar email" className="text-accent border-accent/30 hover:bg-accent/10">
+              <MailCheck className="w-3 h-3 mr-1" />
+              <span className="text-xs hidden sm:inline">Validar</span>
             </Button>
           )}
           {u.banned ? (
