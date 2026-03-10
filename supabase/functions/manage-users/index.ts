@@ -298,7 +298,17 @@ serve(async (req) => {
           .or(`user_id.eq.${targetUser.id},parent_id.eq.${targetUser.id}`);
 
         if (!students || students.length === 0) {
-          return new Response(JSON.stringify({ error: "Nenhum aluno encontrado para este utilizador" }), {
+          // Check what role this user has for a better error message
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("user_id", targetUser.id)
+            .maybeSingle();
+
+          const roleLabel = profileData?.role === "parent" ? "encarregado de educação" : "utilizador";
+          return new Response(JSON.stringify({ 
+            error: `Este ${roleLabel} (${email}) não tem alunos registados. Verifique se os educandos já foram criados.` 
+          }), {
             status: 404,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
