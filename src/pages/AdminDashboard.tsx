@@ -423,6 +423,11 @@ const AdminDashboard = () => {
             {u.admin_role === "super_admin" ? "Super Admin" : "Admin"}
           </span>
         )}
+        {u.is_premium && (
+          <span className="ml-1 text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-600 inline-flex items-center gap-0.5">
+            <Crown className="w-3 h-3" /> Premium
+          </span>
+        )}
       </td>
       <td className="p-2">
         <div className="flex gap-1">
