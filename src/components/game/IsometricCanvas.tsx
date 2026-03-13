@@ -259,10 +259,13 @@ export const IsometricCanvas = ({
 
       if (def.id === 'road' || def.id === 'wall') continue;
 
-      // Shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      // Enhanced shadow with gradient
+      const shadowGrad = ctx.createRadialGradient(sx + 3, sy + 5, 0, sx + 3, sy + 5, 18 * def.width);
+      shadowGrad.addColorStop(0, 'rgba(0,0,0,0.2)');
+      shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = shadowGrad;
       ctx.beginPath();
-      ctx.ellipse(sx, sy + 4, 16 * def.width, 8 * def.height, 0, 0, Math.PI * 2);
+      ctx.ellipse(sx + 3, sy + 5, 18 * def.width, 9 * def.height, 0.15, 0, Math.PI * 2);
       ctx.fill();
 
       drawBuildingSprite(ctx, b.defId, sx, sy, def.width, def.height, b.level);
