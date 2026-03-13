@@ -327,6 +327,9 @@ export const IsometricCanvas = ({
     drawParticles(ctx);
 
     ctx.restore();
+
+    // Atmosphere overlay (drawn in screen space)
+    drawAtmosphere(ctx, w, h, time);
   }
 
   function drawCitizen(ctx: CanvasRenderingContext2D, sx: number, sy: number, citizen: AnimatedCitizen, time: number) {
