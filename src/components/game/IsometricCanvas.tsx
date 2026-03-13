@@ -333,44 +333,114 @@ export const IsometricCanvas = ({
   }
 
   function drawCitizen(ctx: CanvasRenderingContext2D, sx: number, sy: number, citizen: AnimatedCitizen, time: number) {
-    // Body
     const bobble = Math.sin(time * 8 + citizen.id) * 1;
-    ctx.fillStyle = citizen.color;
-    ctx.beginPath();
-    ctx.ellipse(sx, sy - 4 + bobble, 3, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Head
-    ctx.fillStyle = '#f5d0a0';
-    ctx.beginPath();
-    ctx.arc(sx, sy - 10 + bobble, 2.5, 0, Math.PI * 2);
-    ctx.fill();
+    const walkLean = Math.sin(time * 4 + citizen.id * 2) * 0.5;
 
     // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
     ctx.beginPath();
-    ctx.ellipse(sx, sy + 2, 3, 1.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy + 2, 4, 1.8, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Complaint bubble
+    // Feet
+    ctx.fillStyle = '#4a3020';
+    const footPhase = Math.sin(time * 8 + citizen.id);
+    ctx.beginPath();
+    ctx.ellipse(sx - 1.5 + footPhase * 0.5, sy + 0.5, 1.2, 0.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(sx + 1.5 - footPhase * 0.5, sy + 0.5, 1.2, 0.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body with clothing gradient
+    const bodyGrad = ctx.createLinearGradient(sx - 3, sy - 2 + bobble, sx + 3, sy + 3 + bobble);
+    bodyGrad.addColorStop(0, citizen.color);
+    bodyGrad.addColorStop(1, darkenColor(citizen.color, 0.3));
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.ellipse(sx + walkLean, sy - 3 + bobble, 3.5, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Belt/waist detail
+    ctx.strokeStyle = darkenColor(citizen.color, 0.5);
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(sx - 3 + walkLean, sy - 1 + bobble);
+    ctx.lineTo(sx + 3 + walkLean, sy - 1 + bobble);
+    ctx.stroke();
+
+    // Arms
+    ctx.strokeStyle = citizen.color;
+    ctx.lineWidth = 1.5;
+    const armSwing = Math.sin(time * 6 + citizen.id) * 2;
+    ctx.beginPath();
+    ctx.moveTo(sx - 3 + walkLean, sy - 4 + bobble);
+    ctx.lineTo(sx - 5 + walkLean + armSwing, sy - 1 + bobble);
+    ctx.moveTo(sx + 3 + walkLean, sy - 4 + bobble);
+    ctx.lineTo(sx + 5 + walkLean - armSwing, sy - 1 + bobble);
+    ctx.stroke();
+
+    // Head with skin tone
+    const skinTones = ['#f5d0a0', '#e8c090', '#d4a878', '#c49468'];
+    const skinIdx = Math.abs(citizen.id) % skinTones.length;
+    ctx.fillStyle = skinTones[skinIdx];
+    ctx.beginPath();
+    ctx.arc(sx + walkLean, sy - 9.5 + bobble, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hair
+    const hairColors = ['#3a2010', '#1a1008', '#6a4020', '#8a6030', '#2a1a08'];
+    ctx.fillStyle = hairColors[Math.abs(citizen.id * 3) % hairColors.length];
+    ctx.beginPath();
+    ctx.arc(sx + walkLean, sy - 10.5 + bobble, 3, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes
+    ctx.fillStyle = '#222';
+    ctx.beginPath();
+    ctx.arc(sx + walkLean - 1, sy - 9.5 + bobble, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(sx + walkLean + 1, sy - 9.5 + bobble, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Complaint bubble (improved)
     if (citizen.complaint && citizen.complaintTimer > 0) {
       const alpha = Math.min(1, citizen.complaintTimer / 30);
       ctx.globalAlpha = alpha;
-      // Bubble
-      ctx.fillStyle = '#fff';
+      // Bubble with pointer
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
       ctx.beginPath();
-      ctx.roundRect(sx - 18, sy - 26 + bobble, 36, 14, 4);
+      ctx.roundRect(sx - 20, sy - 28 + bobble, 40, 15, 5);
       ctx.fill();
-      ctx.strokeStyle = '#ccc';
+      // Pointer triangle
+      ctx.beginPath();
+      ctx.moveTo(sx - 2, sy - 13 + bobble);
+      ctx.lineTo(sx + 2, sy - 13 + bobble);
+      ctx.lineTo(sx, sy - 11 + bobble);
+      ctx.closePath();
+      ctx.fill();
+      // Shadow
+      ctx.strokeStyle = 'rgba(0,0,0,0.1)';
       ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.roundRect(sx - 20, sy - 28 + bobble, 40, 15, 5);
       ctx.stroke();
       // Text
       ctx.fillStyle = '#333';
       ctx.font = '7px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(citizen.complaint, sx, sy - 17 + bobble);
+      ctx.fillText(citizen.complaint, sx, sy - 18 + bobble);
       ctx.globalAlpha = 1;
     }
+  }
+
+  // Utility to darken a hex color
+  function darkenColor(hex: string, amount: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgb(${Math.max(0, Math.floor(r * (1 - amount)))}, ${Math.max(0, Math.floor(g * (1 - amount)))}, ${Math.max(0, Math.floor(b * (1 - amount)))})`;
   }
 
   function drawFarmCrops(ctx: CanvasRenderingContext2D, sx: number, sy: number, level: number, time: number) {
