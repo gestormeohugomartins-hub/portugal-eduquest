@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { BUILDING_DEFS, PlacedBuilding } from '@/lib/gameTypes';
+import { BUILDING_DEFS, PlacedBuilding, getEvolutionTier } from '@/lib/gameTypes';
 import { RESOURCE_INFO } from '@/hooks/useResources';
 import { getUpgradeCost } from '@/lib/gridLogic';
 import { Coins, Diamond, ArrowUp, Trash2, BookOpen } from 'lucide-react';
@@ -32,6 +32,8 @@ export const BuildingInfoModal = ({
   const isMonument = def.category === 'monument';
 
   const lvlMult = 1 + (building.level - 1) * 0.5;
+  const evolution = getEvolutionTier(building.level);
+  const nextEvolution = building.level < def.maxLevel ? getEvolutionTier(building.level + 1) : null;
 
   return (
     <>
@@ -43,8 +45,13 @@ export const BuildingInfoModal = ({
               <div>
                 <div>{def.name}</div>
                 <div className="text-sm font-body text-muted-foreground">
-                  Nível {building.level}/{def.maxLevel}
+                  {evolution.emoji} {evolution.name} (Nv {building.level}/{def.maxLevel})
                 </div>
+                {nextEvolution && (
+                  <div className="text-[10px] font-body text-primary/70">
+                    Próximo: {nextEvolution.emoji} {nextEvolution.name}
+                  </div>
+                )}
               </div>
             </DialogTitle>
           </DialogHeader>

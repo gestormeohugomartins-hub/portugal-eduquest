@@ -1,5 +1,6 @@
 import { Coins, Diamond, Users } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
+import { getSettlementType } from "@/lib/gameTypes";
 
 interface Notification {
   id: string;
@@ -14,6 +15,7 @@ interface Notification {
 interface GameHUDProps {
   student: {
     display_name: string;
+    nickname?: string | null;
     school_year: string;
     coins: number;
     diamonds: number;
@@ -28,19 +30,24 @@ interface GameHUDProps {
 }
 
 export const GameHUD = ({ student, notifications = [], unreadCount = 0, onMarkAsRead, onMarkAllAsRead }: GameHUDProps) => {
+  const settlement = getSettlementType(student.village_level);
+  const villageName = student.nickname || student.display_name;
+
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-b-2 border-border safe-top">
       <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 max-w-4xl mx-auto">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-shrink">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
             <span className="font-display text-xs sm:text-sm font-bold text-primary-foreground">
-              {student.display_name.charAt(0).toUpperCase()}
+              {villageName.charAt(0).toUpperCase()}
             </span>
           </div>
           <div className="min-w-0">
-            <p className="font-body text-xs sm:text-sm font-bold leading-tight truncate max-w-[80px] sm:max-w-none">{student.display_name}</p>
+            <p className="font-body text-xs sm:text-sm font-bold leading-tight truncate max-w-[100px] sm:max-w-none">
+              {settlement.emoji} {villageName}
+            </p>
             <p className="font-body text-[10px] sm:text-xs text-muted-foreground">
-              {student.school_year}º Ano • Nv {student.village_level}
+              {settlement.name} • {student.school_year}º Ano • Nv {student.village_level}
             </p>
           </div>
         </div>
