@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { TILE_W, TILE_H, BUILDING_DEFS, PlacedBuilding, GridTile } from '@/lib/gameTypes';
 import { gridToIso, applyBuildingsToGrid } from '@/lib/gridLogic';
 import { BUILDING_SPRITES, getSpriteImage, preloadSprites } from '@/lib/sprites';
-import { updateParticles, drawParticles, addSmokeParticle, addSparkle, drawFlag, drawWaterShimmer } from '@/lib/canvasEffects';
+import { updateParticles, drawParticles, addSmokeParticle, addSparkle, addLeafParticle, addFirefly, drawFlag, drawWaterShimmer, drawAtmosphere } from '@/lib/canvasEffects';
 import { AnimatedCitizen, Complaint } from '@/lib/simulation';
 import { generateTerrain, drawTerrainElement, drawWildernessTile, getWildernessBorder, studentIdToSeed, TerrainElement } from '@/lib/terrainGeneration';
 
