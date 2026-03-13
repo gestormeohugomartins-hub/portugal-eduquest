@@ -25,11 +25,12 @@ interface IsometricCanvasProps {
   onTerrainClick?: (element: TerrainElement) => void;
 }
 
-const GRASS_COLORS = ['#4a7c3f', '#4e8243', '#467838', '#528645'];
+const GRASS_COLORS_LIGHT = ['#4e8243', '#528645', '#4a7e3f', '#558a48', '#4c8040'];
+const GRASS_COLORS_DARK = ['#3a6a30', '#3e6e34', '#38662e', '#407038', '#3c6c32'];
 const ROAD_COLOR = '#a09070';
 const ROAD_BORDER = '#7a6a55';
 const WALL_COLOR = '#6b6b6b';
-const FARM_COLORS = ['#6b8e23', '#7a9e32', '#5a7e13'];
+const FARM_COLORS = ['#6b8e23', '#7a9e32', '#5a7e13', '#648a1e'];
 
 export const IsometricCanvas = ({
   grid, buildings, gridSize, selectedBuilding, ghostPos, canPlaceGhost,
