@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { CONSTRUCTION_TIMES } from '@/lib/buildingRenderer';
 import { supabase } from '@/integrations/supabase/client';
 import { IsometricCanvas } from './IsometricCanvas';
 import { BuildMenu } from './BuildMenu';
