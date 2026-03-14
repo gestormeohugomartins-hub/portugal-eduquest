@@ -5,6 +5,8 @@ import { BUILDING_SPRITES, getSpriteImage, preloadSprites } from '@/lib/sprites'
 import { updateParticles, drawParticles, addSmokeParticle, addSparkle, addLeafParticle, addFirefly, drawFlag, drawWaterShimmer, drawAtmosphere } from '@/lib/canvasEffects';
 import { AnimatedCitizen, Complaint } from '@/lib/simulation';
 import { generateTerrain, drawTerrainElement, drawWildernessTile, getWildernessBorder, studentIdToSeed, TerrainElement } from '@/lib/terrainGeneration';
+import { drawBuilding, drawScaffolding, getConstructionProgress } from '@/lib/buildingRenderer';
+import { generateTerrain, drawTerrainElement, drawWildernessTile, getWildernessBorder, studentIdToSeed, TerrainElement } from '@/lib/terrainGeneration';
 
 interface IsometricCanvasProps {
   grid: GridTile[][];
