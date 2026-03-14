@@ -6,7 +6,6 @@ import { updateParticles, drawParticles, addSmokeParticle, addSparkle, addLeafPa
 import { AnimatedCitizen, Complaint } from '@/lib/simulation';
 import { generateTerrain, drawTerrainElement, drawWildernessTile, getWildernessBorder, studentIdToSeed, TerrainElement } from '@/lib/terrainGeneration';
 import { drawBuilding, drawScaffolding, getConstructionProgress } from '@/lib/buildingRenderer';
-import { generateTerrain, drawTerrainElement, drawWildernessTile, getWildernessBorder, studentIdToSeed, TerrainElement } from '@/lib/terrainGeneration';
 
 interface IsometricCanvasProps {
   grid: GridTile[][];
