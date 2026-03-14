@@ -259,7 +259,14 @@ export const IsometricCanvas = ({
       const cy = b.y + def.height / 2 - 0.5;
       const { sx, sy } = gridToIso(cx, cy, TILE_W, TILE_H);
 
-      if (def.id === 'road' || def.id === 'wall') continue;
+      if (def.id === 'road') {
+        drawBuilding(ctx, 'road', sx, sy, b.level, time);
+        continue;
+      }
+      if (def.id === 'wall') {
+        drawBuilding(ctx, 'wall', sx, sy, b.level, time);
+        continue;
+      }
 
       // Enhanced shadow with gradient
       const shadowGrad = ctx.createRadialGradient(sx + 3, sy + 5, 0, sx + 3, sy + 5, 18 * def.width);
@@ -270,30 +277,21 @@ export const IsometricCanvas = ({
       ctx.ellipse(sx + 3, sy + 5, 18 * def.width, 9 * def.height, 0.15, 0, Math.PI * 2);
       ctx.fill();
 
-      drawBuildingSprite(ctx, b.defId, sx, sy, def.width, def.height, b.level);
+      // Check construction progress
+      const progress = getConstructionProgress(b.constructionStartedAt ?? null, b.constructionDuration ?? 0);
 
-      // Flags on towers/monuments
-      if (def.id === 'tower' || def.category === 'monument') {
-        drawFlag(ctx, sx + 8, sy - 20 - (b.level - 1) * 2, time);
-      }
+      if (progress < 1) {
+        drawScaffolding(ctx, sx, sy, def.width, def.height, progress, time);
+      } else {
+        drawBuilding(ctx, b.defId, sx, sy, b.level, time);
 
-      // Fountain water
-      if (def.id === 'fountain' || def.id === 'well') {
-        drawWaterShimmer(ctx, sx, sy - 8, 20, time);
-      }
-
-      // Farm crop animation
-      if (def.id === 'farm') {
-        drawFarmCrops(ctx, sx, sy, b.level, time);
-      }
-
-      // Hospital cross
-      if (def.id === 'hospital') {
-        drawCross(ctx, sx, sy - 25, time);
+        if (def.id === 'tower' || def.category === 'monument') {
+          drawFlag(ctx, sx + 8, sy - 20 - (b.level - 1) * 2, time);
+        }
       }
 
       // Level badge
-      if (b.level > 1) {
+      if (b.level > 1 && progress >= 1) {
         ctx.fillStyle = '#f5a623';
         ctx.beginPath();
         ctx.arc(sx + 14, sy - 22 - (b.level - 1) * 2, 8, 0, Math.PI * 2);
@@ -308,7 +306,7 @@ export const IsometricCanvas = ({
       }
 
       // Production ready indicator
-      if (productionReady.has(b.id)) {
+      if (productionReady.has(b.id) && progress >= 1) {
         const bobY = Math.sin(time * 4) * 3;
         ctx.fillStyle = '#f5a623';
         ctx.beginPath();
