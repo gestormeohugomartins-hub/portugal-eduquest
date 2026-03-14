@@ -62,6 +62,8 @@ export interface PlacedBuilding {
   y: number;
   level: number;
   dbId?: string; // database id
+  constructionStartedAt?: string | null;
+  constructionDuration?: number; // seconds
 }
 
 // ====== Evolution Level Names (Aldeia → Vila → Cidade) ======

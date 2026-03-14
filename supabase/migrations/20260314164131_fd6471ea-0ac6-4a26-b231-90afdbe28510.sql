@@ -1,0 +1,2 @@
+ALTER TABLE public.buildings ADD COLUMN IF NOT EXISTS construction_started_at timestamptz DEFAULT now();
+ALTER TABLE public.buildings ADD COLUMN IF NOT EXISTS construction_duration_seconds integer DEFAULT 0;

@@ -178,6 +178,8 @@ export type Database = {
       buildings: {
         Row: {
           building_type: string
+          construction_duration_seconds: number | null
+          construction_started_at: string | null
           created_at: string
           id: string
           level: number
@@ -187,6 +189,8 @@ export type Database = {
         }
         Insert: {
           building_type: string
+          construction_duration_seconds?: number | null
+          construction_started_at?: string | null
           created_at?: string
           id?: string
           level?: number
@@ -196,6 +200,8 @@ export type Database = {
         }
         Update: {
           building_type?: string
+          construction_duration_seconds?: number | null
+          construction_started_at?: string | null
           created_at?: string
           id?: string
           level?: number
