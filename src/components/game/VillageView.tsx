@@ -265,6 +265,8 @@ export const VillageView = ({ student, onQuiz, onRefresh, onPremium }: VillageVi
         id: b.id, defId: b.building_type,
         x: b.position_x, y: b.position_y,
         level: b.level, dbId: b.id,
+        constructionStartedAt: b.construction_started_at,
+        constructionDuration: b.construction_duration_seconds ?? 0,
       })));
     }
     setLoading(false);
