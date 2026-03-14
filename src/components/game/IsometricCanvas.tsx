@@ -445,48 +445,6 @@ export const IsometricCanvas = ({
     return `rgb(${Math.max(0, Math.floor(r * (1 - amount)))}, ${Math.max(0, Math.floor(g * (1 - amount)))}, ${Math.max(0, Math.floor(b * (1 - amount)))})`;
   }
 
-  function drawFarmCrops(ctx: CanvasRenderingContext2D, sx: number, sy: number, level: number, time: number) {
-    // Draw little crop rows
-    const cropColors = ['#228B22', '#32CD32', '#6B8E23', '#9ACD32'];
-    for (let i = 0; i < 3 + level; i++) {
-      const ox = (i - 2) * 6;
-      const oy = (i % 2) * 3 - 2;
-      const sway = Math.sin(time * 2 + i) * 1;
-      ctx.fillStyle = cropColors[i % cropColors.length];
-      ctx.beginPath();
-      ctx.ellipse(sx + ox + sway, sy + oy - 3, 2, 3 + level * 0.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  function drawCross(ctx: CanvasRenderingContext2D, sx: number, sy: number, time: number) {
-    const pulse = Math.sin(time * 2) * 0.1 + 0.9;
-    ctx.globalAlpha = pulse;
-    ctx.fillStyle = '#ff3333';
-    ctx.fillRect(sx - 1.5, sy - 5, 3, 10);
-    ctx.fillRect(sx - 5, sy - 1.5, 10, 3);
-    ctx.globalAlpha = 1;
-  }
-
-  function drawBuildingSprite(ctx: CanvasRenderingContext2D, defId: string, sx: number, sy: number, bw: number, bh: number, level: number) {
-    const sprite = BUILDING_SPRITES[defId];
-    const img = sprite ? getSpriteImage(sprite.image) : null;
-
-    if (img && sprite) {
-      const drawW = 32 + (bw - 1) * 24 + (level - 1) * 4;
-      const drawH = drawW * (sprite.sh / sprite.sw);
-      ctx.drawImage(img, sprite.sx, sprite.sy, sprite.sw, sprite.sh, sx - drawW / 2, sy - drawH + 8, drawW, drawH);
-    } else {
-      const def = BUILDING_DEFS[defId];
-      if (def) {
-        const baseSize = 22 + (bw - 1) * 10;
-        const levelSize = baseSize + (level - 1) * 3;
-        ctx.font = `${levelSize}px serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText(def.emoji, sx, sy - 6 - (level - 1) * 2);
-      }
-    }
-  }
 
   function drawIsoDiamond(ctx: CanvasRenderingContext2D, sx: number, sy: number, type: string, x: number, y: number, buildingId: string | undefined, allBuildings: PlacedBuilding[]) {
     drawDiamondPath(ctx, sx, sy);
