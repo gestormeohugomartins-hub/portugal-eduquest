@@ -243,7 +243,7 @@ export const IsometricCanvas = ({
         }
         const { sx, sy } = gridToIso(ghostPos.x, ghostPos.y, TILE_W, TILE_H);
         ctx.globalAlpha = 0.6;
-        drawBuildingSprite(ctx, def.id, sx, sy, def.width, def.height, 1);
+        drawBuilding(ctx, def.id, sx, sy, 1, timeRef.current);
         ctx.globalAlpha = 1;
       }
     }
