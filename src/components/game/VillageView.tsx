@@ -332,9 +332,20 @@ export const VillageView = ({ student, onQuiz, onRefresh, onPremium }: VillageVi
       }
     }
 
+    const constructionDuration = CONSTRUCTION_TIMES[def.id] || 0;
+    const now = new Date().toISOString();
+
     const { data, error } = await supabase
       .from('buildings')
-      .insert({ student_id: student.id, building_type: def.id, position_x: gx, position_y: gy, level: 1 })
+      .insert({
+        student_id: student.id,
+        building_type: def.id,
+        position_x: gx,
+        position_y: gy,
+        level: 1,
+        construction_started_at: now,
+        construction_duration_seconds: constructionDuration,
+      })
       .select().single();
 
     if (error) { toast.error('Erro ao construir!'); return; }
@@ -353,8 +364,12 @@ export const VillageView = ({ student, onQuiz, onRefresh, onPremium }: VillageVi
     addBuildParticles(sx, sy);
 
     SFX.place();
-    toast.success(`${def.name} construído! 🏗️`);
-    setBuildings(prev => [...prev, { id: data.id, defId: def.id, x: gx, y: gy, level: 1, dbId: data.id }]);
+    const timeLabel = constructionDuration >= 60 ? `${Math.floor(constructionDuration / 60)}min` : `${constructionDuration}s`;
+    toast.success(`${def.name} em construção! ⏱️ ${timeLabel}`);
+    setBuildings(prev => [...prev, {
+      id: data.id, defId: def.id, x: gx, y: gy, level: 1, dbId: data.id,
+      constructionStartedAt: now, constructionDuration: constructionDuration,
+    }]);
     setSelectedBuilding(null);
     setGhostPos(null);
     onRefresh();
