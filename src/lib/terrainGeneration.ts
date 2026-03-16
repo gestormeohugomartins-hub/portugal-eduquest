@@ -179,7 +179,7 @@ export function drawTerrainElement(ctx: CanvasRenderingContext2D, el: TerrainEle
   }
 }
 
-// Enhanced wilderness grass tile with texture
+// Optimized wilderness tile — flat color, no gradient
 export function drawWildernessTile(ctx: CanvasRenderingContext2D, gx: number, gy: number, tileW: number, tileH: number, gridSize: number) {
   const { sx, sy } = gridToIso(gx, gy, tileW, tileH);
 
@@ -189,11 +189,10 @@ export function drawWildernessTile(ctx: CanvasRenderingContext2D, gx: number, gy
   );
   const darkness = Math.min(0.35, distFromGrid * 0.04);
   const noise = ((gx * 7 + gy * 13) % 7) - 3;
-  const r = Math.max(18, 42 - darkness * 40 + noise);
-  const g = Math.max(45, 85 - darkness * 50 + noise * 1.5);
-  const b = Math.max(15, 35 - darkness * 25 + noise * 0.5);
+  const r = Math.max(18, Math.floor(42 - darkness * 40 + noise));
+  const g = Math.max(45, Math.floor(85 - darkness * 50 + noise * 1.5));
+  const b = Math.max(15, Math.floor(35 - darkness * 25 + noise * 0.5));
 
-  // Main tile
   ctx.beginPath();
   ctx.moveTo(sx, sy - tileH / 2);
   ctx.lineTo(sx + tileW / 2, sy);
@@ -201,29 +200,8 @@ export function drawWildernessTile(ctx: CanvasRenderingContext2D, gx: number, gy
   ctx.lineTo(sx - tileW / 2, sy);
   ctx.closePath();
 
-  // Gradient for 3D depth
-  const grad = ctx.createLinearGradient(sx - tileW / 4, sy - tileH / 2, sx + tileW / 4, sy + tileH / 2);
-  grad.addColorStop(0, `rgb(${r + 8}, ${g + 12}, ${b + 5})`);
-  grad.addColorStop(0.5, `rgb(${r}, ${g}, ${b})`);
-  grad.addColorStop(1, `rgb(${Math.max(10, r - 10)}, ${Math.max(30, g - 15)}, ${Math.max(8, b - 8)})`);
-  ctx.fillStyle = grad;
+  ctx.fillStyle = `rgb(${r},${g},${b})`;
   ctx.fill();
-
-  // Subtle grass texture lines
-  if (distFromGrid < 6 && (gx + gy) % 3 === 0) {
-    ctx.strokeStyle = `rgba(${r + 15}, ${g + 20}, ${b + 10}, 0.25)`;
-    ctx.lineWidth = 0.3;
-    ctx.beginPath();
-    ctx.moveTo(sx - 4, sy);
-    ctx.lineTo(sx - 2, sy - 3);
-    ctx.moveTo(sx + 2, sy + 1);
-    ctx.lineTo(sx + 4, sy - 2);
-    ctx.stroke();
-  }
-
-  ctx.strokeStyle = `rgba(30, 55, 22, 0.2)`;
-  ctx.lineWidth = 0.3;
-  ctx.stroke();
 }
 
 // ====== Enhanced drawing functions ======
