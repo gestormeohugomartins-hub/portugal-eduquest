@@ -1,8 +1,8 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { TILE_W, TILE_H, BUILDING_DEFS, PlacedBuilding, GridTile } from '@/lib/gameTypes';
 import { gridToIso, applyBuildingsToGrid } from '@/lib/gridLogic';
-import { BUILDING_SPRITES, getSpriteImage, preloadSprites } from '@/lib/sprites';
-import { updateParticles, drawParticles, addSmokeParticle, addSparkle, addLeafParticle, addFirefly, drawFlag, drawWaterShimmer, drawAtmosphere } from '@/lib/canvasEffects';
+import { preloadSprites } from '@/lib/sprites';
+import { updateParticles, drawParticles, addSmokeParticle, addSparkle, addLeafParticle, addFirefly, drawFlag, drawAtmosphere } from '@/lib/canvasEffects';
 import { AnimatedCitizen, Complaint } from '@/lib/simulation';
 import { generateTerrain, drawTerrainElement, drawWildernessTile, getWildernessBorder, studentIdToSeed, TerrainElement } from '@/lib/terrainGeneration';
 import { drawBuilding, drawScaffolding, getConstructionProgress } from '@/lib/buildingRenderer';
@@ -26,12 +26,13 @@ interface IsometricCanvasProps {
   onTerrainClick?: (element: TerrainElement) => void;
 }
 
-const GRASS_COLORS_LIGHT = ['#4e8243', '#528645', '#4a7e3f', '#558a48', '#4c8040'];
-const GRASS_COLORS_DARK = ['#3a6a30', '#3e6e34', '#38662e', '#407038', '#3c6c32'];
+const GRASS_COLORS = ['#4e8243', '#528645', '#4a7e3f', '#558a48', '#4c8040'];
 const ROAD_COLOR = '#a09070';
-const ROAD_BORDER = '#7a6a55';
 const WALL_COLOR = '#6b6b6b';
 const FARM_COLORS = ['#6b8e23', '#7a9e32', '#5a7e13', '#648a1e'];
+
+// Reduced wilderness border for performance
+const PERF_WILDERNESS_BORDER = 6;
 
 export const IsometricCanvas = ({
   grid, buildings, gridSize, selectedBuilding, ghostPos, canPlaceGhost,
@@ -44,25 +45,74 @@ export const IsometricCanvas = ({
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [camStart, setCamStart] = useState({ x: 0, y: 0 });
-  const [spritesLoaded, setSpritesLoaded] = useState(false);
   const animFrameRef = useRef<number>(0);
   const timeRef = useRef(0);
+  const lastCanvasSize = useRef({ w: 0, h: 0 });
+
+  // Use refs for render data so animation loop doesn't restart
+  const renderDataRef = useRef({
+    fullGrid: null as GridTile[][] | null,
+    buildings: [] as PlacedBuilding[],
+    gridSize: 0,
+    selectedBuilding: null as string | null,
+    ghostPos: null as { x: number; y: number } | null,
+    canPlaceGhost: false,
+    productionReady: new Set<string>(),
+    animatedCitizens: [] as AnimatedCitizen[],
+    complaints: [] as Complaint[],
+    camera: { x: 0, y: 0 },
+    zoom: 1,
+  });
 
   const fullGrid = useMemo(() => applyBuildingsToGrid(grid, buildings), [grid, buildings]);
 
-  // Generate terrain elements (deterministic based on student id)
   const terrainElements = useMemo(() => {
     const seed = studentId ? studentIdToSeed(studentId) : 12345;
     return generateTerrain({ district, gridSize, seed });
   }, [studentId, district, gridSize]);
 
-  const wildernessBorder = getWildernessBorder();
+  // Pre-sort and pre-filter terrain for rendering
+  const sortedNonWaterTerrain = useMemo(() => 
+    terrainElements
+      .filter(el => el.type !== 'river_tile' && el.type !== 'lake_tile')
+      .sort((a, b) => (a.gx + a.gy) - (b.gx + b.gy)),
+    [terrainElements]
+  );
+
+  const waterTerrain = useMemo(() => 
+    terrainElements.filter(el => el.type === 'river_tile' || el.type === 'lake_tile'),
+    [terrainElements]
+  );
+
+  const waterTileSet = useMemo(() => {
+    const set = new Set<string>();
+    for (const el of waterTerrain) {
+      set.add(`${Math.floor(el.gx)},${Math.floor(el.gy)}`);
+    }
+    return set;
+  }, [waterTerrain]);
+
   const originX = (gridSize * TILE_W) / 2;
   const originY = 50;
 
   useEffect(() => {
-    preloadSprites().then(() => setSpritesLoaded(true));
+    preloadSprites();
   }, []);
+
+  // Update render data ref on prop changes (no re-render, no loop restart)
+  useEffect(() => {
+    renderDataRef.current.fullGrid = fullGrid;
+    renderDataRef.current.buildings = buildings;
+    renderDataRef.current.gridSize = gridSize;
+    renderDataRef.current.selectedBuilding = selectedBuilding;
+    renderDataRef.current.ghostPos = ghostPos;
+    renderDataRef.current.canPlaceGhost = canPlaceGhost;
+    renderDataRef.current.productionReady = productionReady;
+    renderDataRef.current.animatedCitizens = animatedCitizens;
+    renderDataRef.current.complaints = complaints;
+    renderDataRef.current.camera = camera;
+    renderDataRef.current.zoom = zoom;
+  });
 
   const screenToGrid = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
@@ -78,7 +128,6 @@ export const IsometricCanvas = ({
     return null;
   }, [camera, zoom, gridSize, originX]);
 
-  // Convert screen coords to fractional grid coords (for terrain element detection, supports outside grid)
   const screenToWorldGrid = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
@@ -92,10 +141,9 @@ export const IsometricCanvas = ({
     return { gx, gy };
   }, [camera, zoom, originX]);
 
-  // Find nearest terrain element to world coords
   const findTerrainElement = useCallback((worldGx: number, worldGy: number): TerrainElement | null => {
     let closest: TerrainElement | null = null;
-    let closestDist = 1.5; // max click distance in grid units
+    let closestDist = 1.5;
     for (const el of terrainElements) {
       if (el.type === 'river_tile' || el.type === 'lake_tile' || el.type === 'bush') continue;
       const dx = el.gx - worldGx;
@@ -109,23 +157,33 @@ export const IsometricCanvas = ({
     return closest;
   }, [terrainElements]);
 
-  // Animation loop
+  // Stable animation loop — runs once, reads refs
   useEffect(() => {
     let running = true;
-    const loop = () => {
-      if (!running) return;
-      timeRef.current += 0.016;
-      render();
-      animFrameRef.current = requestAnimationFrame(loop);
-    };
-    loop();
-    return () => { running = false; cancelAnimationFrame(animFrameRef.current); };
-  }, [fullGrid, buildings, camera, zoom, ghostPos, selectedBuilding, canPlaceGhost, gridSize, spritesLoaded, productionReady, animatedCitizens, complaints]);
+    let lastFrame = 0;
+    const TARGET_FPS = 30;
+    const FRAME_TIME = 1000 / TARGET_FPS;
 
-  // Smoke, leaf and firefly effects
+    const loop = (timestamp: number) => {
+      if (!running) return;
+      animFrameRef.current = requestAnimationFrame(loop);
+
+      // Throttle to ~30fps
+      if (timestamp - lastFrame < FRAME_TIME) return;
+      lastFrame = timestamp;
+
+      timeRef.current += 0.033; // ~30fps step
+      render();
+    };
+    animFrameRef.current = requestAnimationFrame(loop);
+    return () => { running = false; cancelAnimationFrame(animFrameRef.current); };
+  }, []); // Empty deps — stable loop
+
+  // Smoke & leaf effects — reduced frequency
   useEffect(() => {
     const interval = setInterval(() => {
-      for (const b of buildings) {
+      const rd = renderDataRef.current;
+      for (const b of rd.buildings) {
         const def = BUILDING_DEFS[b.defId];
         if (!def) continue;
         if (def.id === 'workshop' || def.id === 'market' || def.id === 'windmill') {
@@ -134,122 +192,135 @@ export const IsometricCanvas = ({
           const { sx, sy } = gridToIso(cx, cy, TILE_W, TILE_H);
           addSmokeParticle(sx, sy - 20);
         }
-        if (productionReady.has(b.id)) {
+        if (rd.productionReady.has(b.id)) {
           const cx = b.x + def.width / 2 - 0.5;
           const cy = b.y + def.height / 2 - 0.5;
           const { sx, sy } = gridToIso(cx, cy, TILE_W, TILE_H);
           addSparkle(sx, sy - 15);
         }
       }
-      // Occasional leaf particles from trees in terrain
-      if (Math.random() < 0.3) {
-        const gx = Math.random() * gridSize;
-        const gy = Math.random() * gridSize;
+      // Reduced leaf/firefly rate
+      if (Math.random() < 0.15) {
+        const gx = Math.random() * rd.gridSize;
+        const gy = Math.random() * rd.gridSize;
         const { sx, sy } = gridToIso(gx, gy, TILE_W, TILE_H);
         addLeafParticle(sx, sy - 20);
       }
-      // Fireflies at dusk
-      if (Math.random() < 0.15) {
-        const gx = Math.random() * gridSize;
-        const gy = Math.random() * gridSize;
+      if (Math.random() < 0.05) {
+        const gx = Math.random() * rd.gridSize;
+        const gy = Math.random() * rd.gridSize;
         const { sx, sy } = gridToIso(gx, gy, TILE_W, TILE_H);
         addFirefly(sx, sy - 10);
       }
-    }, 800);
+    }, 1200);
     return () => clearInterval(interval);
-  }, [buildings, productionReady, gridSize]);
+  }, []);
 
   function render() {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) return;
 
+    const rd = renderDataRef.current;
     const dpr = window.devicePixelRatio || 1;
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
+
+    // Only resize canvas buffer when dimensions actually change
+    if (lastCanvasSize.current.w !== w || lastCanvasSize.current.h !== h) {
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      lastCanvasSize.current = { w, h };
+    }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#0e200a';
     ctx.fillRect(0, 0, w, h);
 
     ctx.save();
     ctx.translate(w / 2, h / 2);
-    ctx.scale(zoom, zoom);
-    ctx.translate(camera.x - originX, camera.y - originY);
+    ctx.scale(rd.zoom, rd.zoom);
+    ctx.translate(rd.camera.x - originX, rd.camera.y - originY);
 
     const time = timeRef.current;
+    const gs = rd.gridSize;
 
-    // Pre-compute water tile positions
-    const waterTileSet = new Set<string>();
-    for (const el of terrainElements) {
-      if (el.type === 'river_tile' || el.type === 'lake_tile') {
-        waterTileSet.add(`${Math.floor(el.gx)},${Math.floor(el.gy)}`);
+    // Viewport culling bounds (in screen-space, approximate)
+    const viewHalfW = (w / 2) / rd.zoom + 100;
+    const viewHalfH = (h / 2) / rd.zoom + 100;
+    const camX = rd.camera.x;
+    const camY = rd.camera.y;
+
+    const isVisible = (isoX: number, isoY: number) => {
+      const screenX = isoX - originX + camX;
+      const screenY = isoY - originY + camY;
+      return Math.abs(screenX) < viewHalfW && Math.abs(screenY) < viewHalfH;
+    };
+
+    // Draw wilderness tiles (reduced border)
+    const wb = PERF_WILDERNESS_BORDER;
+    for (let y = -wb; y < gs + wb; y++) {
+      for (let x = -wb; x < gs + wb; x++) {
+        if (x >= 0 && x < gs && y >= 0 && y < gs) continue;
+        if (waterTileSet.has(`${x},${y}`)) continue;
+        const { sx, sy } = gridToIso(x, y, TILE_W, TILE_H);
+        if (!isVisible(sx, sy)) continue;
+        drawWildernessTile(ctx, x, y, TILE_W, TILE_H, gs);
       }
     }
 
-    // Draw wilderness tiles (outside village grid)
-    const wb = wildernessBorder;
-    for (let y = -wb; y < gridSize + wb; y++) {
-      for (let x = -wb; x < gridSize + wb; x++) {
-        if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) continue;
-        if (!waterTileSet.has(`${x},${y}`)) {
-          drawWildernessTile(ctx, x, y, TILE_W, TILE_H, gridSize);
+    // Draw water tiles
+    for (const el of waterTerrain) {
+      const { sx, sy } = gridToIso(el.gx, el.gy, TILE_W, TILE_H);
+      if (!isVisible(sx, sy)) continue;
+      drawTerrainElement(ctx, el, TILE_W, TILE_H, time);
+    }
+
+    // Draw village tiles (flat colors — no gradients per tile)
+    const fg = rd.fullGrid;
+    if (fg) {
+      for (let y = 0; y < gs; y++) {
+        for (let x = 0; x < gs; x++) {
+          const tile = fg[y]?.[x];
+          if (!tile) continue;
+          const { sx, sy } = gridToIso(x, y, TILE_W, TILE_H);
+          if (!isVisible(sx, sy)) continue;
+          drawIsoDiamond(ctx, sx, sy, tile.type, x, y, tile.buildingId, rd.buildings);
         }
       }
     }
 
-    // Draw water terrain elements (tiles) first
-    for (const el of terrainElements) {
-      if (el.type === 'river_tile' || el.type === 'lake_tile') {
-        drawTerrainElement(ctx, el, TILE_W, TILE_H, time);
-      }
-    }
-
-    // Draw village tiles
-    for (let y = 0; y < gridSize; y++) {
-      for (let x = 0; x < gridSize; x++) {
-        const tile = fullGrid[y]?.[x];
-        if (!tile) continue;
-        const { sx, sy } = gridToIso(x, y, TILE_W, TILE_H);
-        drawIsoDiamond(ctx, sx, sy, tile.type, x, y, tile.buildingId, buildings);
-      }
-    }
-
-    // Draw terrain elements (sorted by depth for proper overlap)
-    const sortedTerrain = terrainElements
-      .filter(el => el.type !== 'river_tile' && el.type !== 'lake_tile')
-      .sort((a, b) => (a.gx + a.gy) - (b.gx + b.gy));
-    for (const el of sortedTerrain) {
+    // Draw terrain elements (pre-sorted, with culling)
+    for (const el of sortedNonWaterTerrain) {
+      const { sx, sy } = gridToIso(el.gx, el.gy, TILE_W, TILE_H);
+      if (!isVisible(sx, sy)) continue;
       drawTerrainElement(ctx, el, TILE_W, TILE_H, time);
     }
 
     // Draw ghost
-    if (ghostPos && selectedBuilding) {
-      const def = BUILDING_DEFS[selectedBuilding];
+    if (rd.ghostPos && rd.selectedBuilding) {
+      const def = BUILDING_DEFS[rd.selectedBuilding];
       if (def) {
         for (let dy = 0; dy < def.height; dy++) {
           for (let dx = 0; dx < def.width; dx++) {
-            const { sx, sy } = gridToIso(ghostPos.x + dx, ghostPos.y + dy, TILE_W, TILE_H);
+            const { sx, sy } = gridToIso(rd.ghostPos.x + dx, rd.ghostPos.y + dy, TILE_W, TILE_H);
             ctx.globalAlpha = 0.5;
-            ctx.fillStyle = canPlaceGhost ? '#00ff0066' : '#ff000066';
+            ctx.fillStyle = rd.canPlaceGhost ? '#00ff0066' : '#ff000066';
             drawDiamondPath(ctx, sx, sy);
             ctx.fill();
             ctx.globalAlpha = 1;
           }
         }
-        const { sx, sy } = gridToIso(ghostPos.x, ghostPos.y, TILE_W, TILE_H);
+        const { sx, sy } = gridToIso(rd.ghostPos.x, rd.ghostPos.y, TILE_W, TILE_H);
         ctx.globalAlpha = 0.6;
-        drawBuilding(ctx, def.id, sx, sy, 1, timeRef.current);
+        drawBuilding(ctx, def.id, sx, sy, 1, time);
         ctx.globalAlpha = 1;
       }
     }
 
     // Draw buildings sorted by depth
-    const sorted = [...buildings].sort((a, b) => (a.y + a.x) - (b.y + b.x));
+    const sorted = [...rd.buildings].sort((a, b) => (a.y + a.x) - (b.y + b.x));
     for (const b of sorted) {
       const def = BUILDING_DEFS[b.defId];
       if (!def) continue;
@@ -257,33 +328,25 @@ export const IsometricCanvas = ({
       const cx = b.x + def.width / 2 - 0.5;
       const cy = b.y + def.height / 2 - 0.5;
       const { sx, sy } = gridToIso(cx, cy, TILE_W, TILE_H);
+      if (!isVisible(sx, sy)) continue;
 
-      if (def.id === 'road') {
-        drawBuilding(ctx, 'road', sx, sy, b.level, time);
-        continue;
-      }
-      if (def.id === 'wall') {
-        drawBuilding(ctx, 'wall', sx, sy, b.level, time);
+      if (def.id === 'road' || def.id === 'wall') {
+        drawBuilding(ctx, def.id, sx, sy, b.level, time);
         continue;
       }
 
-      // Enhanced shadow with gradient
-      const shadowGrad = ctx.createRadialGradient(sx + 3, sy + 5, 0, sx + 3, sy + 5, 18 * def.width);
-      shadowGrad.addColorStop(0, 'rgba(0,0,0,0.2)');
-      shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = shadowGrad;
+      // Simple shadow (ellipse, no gradient)
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
       ctx.beginPath();
-      ctx.ellipse(sx + 3, sy + 5, 18 * def.width, 9 * def.height, 0.15, 0, Math.PI * 2);
+      ctx.ellipse(sx + 3, sy + 5, 16 * def.width, 8 * def.height, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Check construction progress
       const progress = getConstructionProgress(b.constructionStartedAt ?? null, b.constructionDuration ?? 0);
 
       if (progress < 1) {
         drawScaffolding(ctx, sx, sy, def.width, def.height, progress, time);
       } else {
         drawBuilding(ctx, b.defId, sx, sy, b.level, time);
-
         if (def.id === 'tower' || def.category === 'monument') {
           drawFlag(ctx, sx + 8, sy - 20 - (b.level - 1) * 2, time);
         }
@@ -295,9 +358,6 @@ export const IsometricCanvas = ({
         ctx.beginPath();
         ctx.arc(sx + 14, sy - 22 - (b.level - 1) * 2, 8, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1;
-        ctx.stroke();
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 10px sans-serif';
         ctx.textAlign = 'center';
@@ -305,7 +365,7 @@ export const IsometricCanvas = ({
       }
 
       // Production ready indicator
-      if (productionReady.has(b.id) && progress >= 1) {
+      if (rd.productionReady.has(b.id) && progress >= 1) {
         const bobY = Math.sin(time * 4) * 3;
         ctx.fillStyle = '#f5a623';
         ctx.beginPath();
@@ -318,25 +378,27 @@ export const IsometricCanvas = ({
       }
     }
 
-    // Draw animated citizens
-    for (const citizen of animatedCitizens) {
+    // Draw citizens (simplified)
+    for (const citizen of rd.animatedCitizens) {
       const { sx, sy } = gridToIso(citizen.x, citizen.y, TILE_W, TILE_H);
+      if (!isVisible(sx, sy)) continue;
       drawCitizen(ctx, sx, sy, citizen, time);
     }
 
-    // Draw particles
+    // Particles
     updateParticles();
     drawParticles(ctx);
 
     ctx.restore();
 
-    // Atmosphere overlay (drawn in screen space)
-    drawAtmosphere(ctx, w, h, time);
+    // Lightweight atmosphere (skip on low zoom)
+    if (rd.zoom > 0.6) {
+      drawAtmosphere(ctx, w, h, time);
+    }
   }
 
   function drawCitizen(ctx: CanvasRenderingContext2D, sx: number, sy: number, citizen: AnimatedCitizen, time: number) {
     const bobble = Math.sin(time * 8 + citizen.id) * 1;
-    const walkLean = Math.sin(time * 4 + citizen.id * 2) * 0.5;
 
     // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.12)';
@@ -344,138 +406,53 @@ export const IsometricCanvas = ({
     ctx.ellipse(sx, sy + 2, 4, 1.8, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Feet
-    ctx.fillStyle = '#4a3020';
-    const footPhase = Math.sin(time * 8 + citizen.id);
+    // Body (single fill, no gradient)
+    ctx.fillStyle = citizen.color;
     ctx.beginPath();
-    ctx.ellipse(sx - 1.5 + footPhase * 0.5, sy + 0.5, 1.2, 0.6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(sx + 1.5 - footPhase * 0.5, sy + 0.5, 1.2, 0.6, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy - 3 + bobble, 3.5, 5, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Body with clothing gradient
-    const bodyGrad = ctx.createLinearGradient(sx - 3, sy - 2 + bobble, sx + 3, sy + 3 + bobble);
-    bodyGrad.addColorStop(0, citizen.color);
-    bodyGrad.addColorStop(1, darkenColor(citizen.color, 0.3));
-    ctx.fillStyle = bodyGrad;
-    ctx.beginPath();
-    ctx.ellipse(sx + walkLean, sy - 3 + bobble, 3.5, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Belt/waist detail
-    ctx.strokeStyle = darkenColor(citizen.color, 0.5);
-    ctx.lineWidth = 0.5;
-    ctx.beginPath();
-    ctx.moveTo(sx - 3 + walkLean, sy - 1 + bobble);
-    ctx.lineTo(sx + 3 + walkLean, sy - 1 + bobble);
-    ctx.stroke();
-
-    // Arms
-    ctx.strokeStyle = citizen.color;
-    ctx.lineWidth = 1.5;
-    const armSwing = Math.sin(time * 6 + citizen.id) * 2;
-    ctx.beginPath();
-    ctx.moveTo(sx - 3 + walkLean, sy - 4 + bobble);
-    ctx.lineTo(sx - 5 + walkLean + armSwing, sy - 1 + bobble);
-    ctx.moveTo(sx + 3 + walkLean, sy - 4 + bobble);
-    ctx.lineTo(sx + 5 + walkLean - armSwing, sy - 1 + bobble);
-    ctx.stroke();
-
-    // Head with skin tone
+    // Head
     const skinTones = ['#f5d0a0', '#e8c090', '#d4a878', '#c49468'];
-    const skinIdx = Math.abs(citizen.id) % skinTones.length;
-    ctx.fillStyle = skinTones[skinIdx];
+    ctx.fillStyle = skinTones[Math.abs(citizen.id) % skinTones.length];
     ctx.beginPath();
-    ctx.arc(sx + walkLean, sy - 9.5 + bobble, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Hair
-    const hairColors = ['#3a2010', '#1a1008', '#6a4020', '#8a6030', '#2a1a08'];
-    ctx.fillStyle = hairColors[Math.abs(citizen.id * 3) % hairColors.length];
-    ctx.beginPath();
-    ctx.arc(sx + walkLean, sy - 10.5 + bobble, 3, Math.PI, Math.PI * 2);
+    ctx.arc(sx, sy - 9.5 + bobble, 3, 0, Math.PI * 2);
     ctx.fill();
 
     // Eyes
     ctx.fillStyle = '#222';
-    ctx.beginPath();
-    ctx.arc(sx + walkLean - 1, sy - 9.5 + bobble, 0.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(sx + walkLean + 1, sy - 9.5 + bobble, 0.5, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(sx - 1.5, sy - 10 + bobble, 1, 1);
+    ctx.fillRect(sx + 0.5, sy - 10 + bobble, 1, 1);
 
-    // Complaint bubble (improved)
+    // Complaint bubble (simplified)
     if (citizen.complaint && citizen.complaintTimer > 0) {
       const alpha = Math.min(1, citizen.complaintTimer / 30);
       ctx.globalAlpha = alpha;
-      // Bubble with pointer
-      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.beginPath();
-      ctx.roundRect(sx - 20, sy - 28 + bobble, 40, 15, 5);
+      ctx.roundRect(sx - 18, sy - 26 + bobble, 36, 13, 4);
       ctx.fill();
-      // Pointer triangle
-      ctx.beginPath();
-      ctx.moveTo(sx - 2, sy - 13 + bobble);
-      ctx.lineTo(sx + 2, sy - 13 + bobble);
-      ctx.lineTo(sx, sy - 11 + bobble);
-      ctx.closePath();
-      ctx.fill();
-      // Shadow
-      ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-      ctx.lineWidth = 0.5;
-      ctx.beginPath();
-      ctx.roundRect(sx - 20, sy - 28 + bobble, 40, 15, 5);
-      ctx.stroke();
-      // Text
       ctx.fillStyle = '#333';
       ctx.font = '7px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(citizen.complaint, sx, sy - 18 + bobble);
+      ctx.fillText(citizen.complaint, sx, sy - 17 + bobble);
       ctx.globalAlpha = 1;
     }
   }
-
-  // Utility to darken a hex color
-  function darkenColor(hex: string, amount: number): string {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgb(${Math.max(0, Math.floor(r * (1 - amount)))}, ${Math.max(0, Math.floor(g * (1 - amount)))}, ${Math.max(0, Math.floor(b * (1 - amount)))})`;
-  }
-
 
   function drawIsoDiamond(ctx: CanvasRenderingContext2D, sx: number, sy: number, type: string, x: number, y: number, buildingId: string | undefined, allBuildings: PlacedBuilding[]) {
     drawDiamondPath(ctx, sx, sy);
 
     if (type === 'road') {
-      // Road with worn texture gradient
-      const roadGrad = ctx.createLinearGradient(sx - TILE_W / 4, sy - TILE_H / 4, sx + TILE_W / 4, sy + TILE_H / 4);
-      roadGrad.addColorStop(0, '#b0a080');
-      roadGrad.addColorStop(0.5, ROAD_COLOR);
-      roadGrad.addColorStop(1, '#8a7a60');
-      ctx.fillStyle = roadGrad;
+      ctx.fillStyle = ROAD_COLOR;
       ctx.fill();
-      // Wear marks
-      ctx.strokeStyle = ROAD_BORDER;
+      ctx.strokeStyle = '#7a6a55';
       ctx.lineWidth = 0.4;
-      ctx.stroke();
-      // Center line
-      ctx.strokeStyle = 'rgba(140, 120, 90, 0.3)';
-      ctx.lineWidth = 0.5;
-      ctx.beginPath();
-      ctx.moveTo(sx - 5, sy);
-      ctx.lineTo(sx + 5, sy);
       ctx.stroke();
     } else if (type === 'wall') {
       ctx.fillStyle = WALL_COLOR;
       ctx.fill();
-      ctx.strokeStyle = '#555';
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
     } else {
-      // Grass tile with gradient for 3D depth
       let isFarm = false;
       if (buildingId) {
         const b = allBuildings.find(b => b.id === buildingId);
@@ -483,33 +460,14 @@ export const IsometricCanvas = ({
       }
 
       if (isFarm) {
-        const farmGrad = ctx.createLinearGradient(sx - TILE_W / 4, sy - TILE_H / 2, sx + TILE_W / 4, sy + TILE_H / 2);
-        farmGrad.addColorStop(0, FARM_COLORS[(x + y) % FARM_COLORS.length]);
-        farmGrad.addColorStop(1, FARM_COLORS[(x + y + 1) % FARM_COLORS.length]);
-        ctx.fillStyle = farmGrad;
+        ctx.fillStyle = FARM_COLORS[(x + y) % FARM_COLORS.length];
       } else {
-        const idx = (x + y * 3) % GRASS_COLORS_LIGHT.length;
-        const grad = ctx.createLinearGradient(sx - TILE_W / 4, sy - TILE_H / 2, sx + TILE_W / 4, sy + TILE_H / 2);
-        grad.addColorStop(0, GRASS_COLORS_LIGHT[idx]);
-        grad.addColorStop(1, GRASS_COLORS_DARK[idx]);
-        ctx.fillStyle = grad;
+        ctx.fillStyle = GRASS_COLORS[(x + y * 3) % GRASS_COLORS.length];
       }
       ctx.fill();
       ctx.strokeStyle = '#3a6030';
       ctx.lineWidth = 0.3;
       ctx.stroke();
-
-      // Grass detail on some tiles
-      if (!isFarm && !buildingId && (x * 7 + y * 11) % 5 === 0) {
-        ctx.strokeStyle = 'rgba(100, 160, 80, 0.2)';
-        ctx.lineWidth = 0.4;
-        ctx.beginPath();
-        ctx.moveTo(sx - 3, sy + 1);
-        ctx.lineTo(sx - 1, sy - 2);
-        ctx.moveTo(sx + 1, sy + 2);
-        ctx.lineTo(sx + 3, sy - 1);
-        ctx.stroke();
-      }
     }
   }
 
@@ -542,14 +500,14 @@ export const IsometricCanvas = ({
       if (dist < 5) {
         const pos = screenToGrid(e.clientX, e.clientY);
         if (pos) {
-          const tile = fullGrid[pos.gy]?.[pos.gx];
+          const fg = renderDataRef.current.fullGrid;
+          const tile = fg?.[pos.gy]?.[pos.gx];
           if (tile?.buildingId && !selectedBuilding) {
             const b = buildings.find(b => b.id === tile.buildingId);
             if (b) { onBuildingClick(b); setDragging(false); return; }
           }
           onTileClick(pos.gx, pos.gy);
         } else if (onTerrainClick) {
-          // Clicked outside village grid — check for terrain elements
           const worldPos = screenToWorldGrid(e.clientX, e.clientY);
           if (worldPos) {
             const el = findTerrainElement(worldPos.gx, worldPos.gy);
