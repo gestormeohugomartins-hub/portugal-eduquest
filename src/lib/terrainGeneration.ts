@@ -35,7 +35,7 @@ const COASTAL_DISTRICTS = ['lisboa', 'porto', 'faro', 'setubal', 'aveiro', 'leir
 const RIVER_DISTRICTS = ['santarem', 'coimbra', 'portalegre', 'evora', 'castelo_branco', 'vila_real'];
 const LAKE_DISTRICTS = ['braganca', 'guarda', 'viseu', 'braga', 'beja'];
 
-const WILDERNESS_BORDER = 15;
+const WILDERNESS_BORDER = 6;
 
 export function generateTerrain(config: TerrainConfig): TerrainElement[] {
   const { district, gridSize, seed } = config;
