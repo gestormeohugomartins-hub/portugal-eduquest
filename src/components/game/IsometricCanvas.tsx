@@ -212,7 +212,7 @@ export const IsometricCanvas = ({
         const { sx, sy } = gridToIso(gx, gy, TILE_W, TILE_H);
         addFirefly(sx, sy - 10);
       }
-    }, 1200);
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
